@@ -1,0 +1,21 @@
+-- Add LLC agent input columns to business_setup
+ALTER TABLE public.business_setup
+  ADD COLUMN IF NOT EXISTS career_stage TEXT DEFAULT 'beginner' CHECK (career_stage IN ('beginner', 'developing', 'professional')),
+  ADD COLUMN IF NOT EXISTS monthly_music_income NUMERIC DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS annual_music_income NUMERIC DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS revenue_streams TEXT[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS release_frequency TEXT DEFAULT 'none' CHECK (release_frequency IN ('none', 'occasional', 'consistent')),
+  ADD COLUMN IF NOT EXISTS sync_activity TEXT DEFAULT 'none' CHECK (sync_activity IN ('none', 'preparing', 'actively_pitching')),
+  ADD COLUMN IF NOT EXISTS llc_name TEXT,
+  ADD COLUMN IF NOT EXISTS llc_name_available BOOLEAN,
+  ADD COLUMN IF NOT EXISTS llc_filing_cost NUMERIC,
+  ADD COLUMN IF NOT EXISTS llc_annual_cost NUMERIC,
+  ADD COLUMN IF NOT EXISTS llc_recommended_service TEXT,
+  ADD COLUMN IF NOT EXISTS llc_readiness_score INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS llc_readiness_level TEXT DEFAULT 'LOW',
+  ADD COLUMN IF NOT EXISTS llc_decision TEXT DEFAULT 'WAIT',
+  ADD COLUMN IF NOT EXISTS llc_explanation TEXT,
+  ADD COLUMN IF NOT EXISTS llc_tasks JSONB DEFAULT '[]',
+  ADD COLUMN IF NOT EXISTS llc_warnings JSONB DEFAULT '[]',
+  ADD COLUMN IF NOT EXISTS llc_next_action JSONB,
+  ADD COLUMN IF NOT EXISTS payment_routing_setup BOOLEAN DEFAULT FALSE;
