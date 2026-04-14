@@ -79,10 +79,16 @@ function decisionBadgeClass(decision: string) {
   return "bg-zinc-500/20 text-zinc-400 border-zinc-500/30";
 }
 
-export function LLCDashboard({ setup, onFieldChange, standalone = false }: LLCDashboardProps) {
+export function LLCDashboard({ setup: initialSetup, onFieldChange, standalone = false }: LLCDashboardProps) {
+  const [setup, setSetup] = useState(initialSetup);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync with parent prop when it changes
+  useEffect(() => {
+    setSetup(initialSetup);
+  }, [initialSetup]);
 
   // Debounce field changes — save then re-run agent
   const handleFieldChange = useCallback(
@@ -126,7 +132,8 @@ export function LLCDashboard({ setup, onFieldChange, standalone = false }: LLCDa
   const explanation = setup.llc_explanation;
   const tasks: LLCTaskItem[] = Array.isArray(setup.llc_tasks) ? setup.llc_tasks : [];
   const warnings: string[] = Array.isArray(setup.llc_warnings) ? setup.llc_warnings : [];
-  const nextAction = setup.llc_next_action;
+  // Compute next action dynamically from current task state (not from DB)
+  const nextAction = tasks.find(t => t.status !== "completed") || null;
 
   // Parse readiness factors from tasks data or use defaults
   const factors = [
@@ -159,7 +166,7 @@ export function LLCDashboard({ setup, onFieldChange, standalone = false }: LLCDa
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Shield className="size-6 text-[#E87420]" />
+            <Shield className="size-6 text-[#DC2626]" />
             LLC Setup Guide
           </h2>
           <p className="text-sm text-[#A3A3A3] mt-1">
@@ -223,12 +230,12 @@ export function LLCDashboard({ setup, onFieldChange, standalone = false }: LLCDa
 
       {/* AI Explanation */}
       {explanation && (
-        <Card className="border-[#E87420]/20 bg-[#E87420]/5">
+        <Card className="border-[#DC2626]/20 bg-[#DC2626]/5">
           <CardContent className="py-4">
             <div className="flex items-start gap-3">
-              <Sparkles className="size-5 text-[#E87420] mt-0.5 shrink-0" />
+              <Sparkles className="size-5 text-[#DC2626] mt-0.5 shrink-0" />
               <div>
-                <p className="text-xs font-medium text-[#E87420] mb-1">AI Analysis</p>
+                <p className="text-xs font-medium text-[#DC2626] mb-1">AI Analysis</p>
                 <p className="text-sm text-white leading-relaxed">{explanation}</p>
               </div>
             </div>
@@ -448,7 +455,7 @@ export function LLCDashboard({ setup, onFieldChange, standalone = false }: LLCDa
               </div>
 
               {setup.llc_state && stateInfo && (
-                <div className="rounded-lg bg-[#0A0A0A] border border-[#1F1F1F] p-4 space-y-3">
+                <div className="rounded-lg bg-black border border-[#1A1A1A] p-4 space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-[#A3A3A3]">Filing Fee</span>
                     <span className="text-sm font-semibold text-white">
@@ -467,7 +474,7 @@ export function LLCDashboard({ setup, onFieldChange, standalone = false }: LLCDa
                   <Separator />
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-[#A3A3A3]">First Year Total</span>
-                    <span className="text-sm font-bold text-[#E87420]">
+                    <span className="text-sm font-bold text-[#DC2626]">
                       ${(stateInfo.filing_fee || 0) + (stateInfo.annual_fee || 0)}
                     </span>
                   </div>
@@ -483,84 +490,162 @@ export function LLCDashboard({ setup, onFieldChange, standalone = false }: LLCDa
                 <FileText className="size-4 text-blue-400" />
                 LLC Checklist
               </CardTitle>
-              <p className="text-xs text-[#777]">
-                {tasks.filter((t) => t.status === "completed").length} of {tasks.length} completed
-              </p>
+              <div className="flex items-center gap-3 mt-1">
+                <div className="flex-1 h-2 rounded-full bg-[#1A1A1A] overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === "completed").length / tasks.length) * 100 : 0}%` }}
+                  />
+                </div>
+                <span className="text-xs text-[#777] shrink-0">
+                  {tasks.filter((t) => t.status === "completed").length}/{tasks.length} done
+                </span>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-3">
               {tasks.length === 0 ? (
                 <p className="text-sm text-[#555] py-4 text-center">
                   Run the analysis to generate your personalized checklist.
                 </p>
               ) : (
-                tasks.map((task) => {
-                  const isNext = nextAction?.id === task.id;
+                tasks.map((task, index) => {
+                  const isNext = nextAction?.id === task.id && task.status !== "completed";
+                  const isCompleted = task.status === "completed";
+                  const stepNumber = index + 1;
+
+                  const handleToggleTask = async () => {
+                    const updatedTasks = tasks.map((t) =>
+                      t.id === task.id
+                        ? { ...t, status: isCompleted ? "pending" : "completed" }
+                        : t
+                    );
+
+                    const patch: Record<string, unknown> = {
+                      llc_tasks: updatedTasks,
+                    };
+
+                    if (task.id === "file_llc") {
+                      patch.llc_status = isCompleted ? "in_progress" : "completed";
+                    } else if (task.id === "get_ein") {
+                      patch.ein_obtained = !isCompleted;
+                    } else if (task.id === "bank_account") {
+                      patch.business_bank_account = !isCompleted;
+                    } else if (task.id === "payment_routing") {
+                      patch.payment_routing_setup = !isCompleted;
+                    }
+
+                    setSetup((prev) =>
+                      prev ? { ...prev, llc_tasks: updatedTasks as any, ...patch } : prev
+                    );
+
+                    await fetch("/api/business-setup", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(patch),
+                    });
+                  };
+
                   return (
                     <div
                       key={task.id}
                       className={cn(
-                        "rounded-lg border p-3 transition-colors",
+                        "rounded-xl border transition-all duration-300 overflow-hidden",
                         isNext
-                          ? "border-[#E87420]/50 bg-[#E87420]/5"
-                          : task.status === "completed"
-                            ? "border-[#1F1F1F] bg-[#0A0A0A] opacity-60"
-                            : "border-[#1F1F1F] bg-[#0A0A0A]"
+                          ? "border-[#DC2626] bg-gradient-to-r from-[#DC2626]/10 to-transparent shadow-lg shadow-[#DC2626]/5"
+                          : isCompleted
+                            ? "border-emerald-500/30 bg-emerald-500/5"
+                            : "border-[#1A1A1A] bg-[#111]"
                       )}
                     >
-                      <div className="flex items-start gap-2">
-                        {task.status === "completed" ? (
-                          <CheckCircle2 className="size-4 text-emerald-400 mt-0.5 shrink-0" />
-                        ) : isNext ? (
-                          <ArrowRight className="size-4 text-[#E87420] mt-0.5 shrink-0" />
-                        ) : (
-                          <Circle className="size-4 text-[#333] mt-0.5 shrink-0" />
-                        )}
+                      {/* Task Header */}
+                      <div className="flex items-center gap-3 p-4">
+                        {/* Step Number / Check */}
+                        <div
+                          className={cn(
+                            "size-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold transition-all",
+                            isCompleted
+                              ? "bg-emerald-500 text-white"
+                              : isNext
+                                ? "bg-[#DC2626] text-white"
+                                : "bg-[#1A1A1A] text-[#555] border border-[#333]"
+                          )}
+                        >
+                          {isCompleted ? "✓" : stepNumber}
+                        </div>
+
+                        {/* Title + Meta */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
                             <span
                               className={cn(
-                                "text-sm font-medium",
-                                task.status === "completed"
-                                  ? "text-[#777] line-through"
-                                  : isNext
-                                    ? "text-white"
-                                    : "text-[#A3A3A3]"
+                                "text-sm font-semibold",
+                                isCompleted ? "text-emerald-400" : isNext ? "text-white" : "text-[#A3A3A3]"
                               )}
                             >
                               {task.title}
                             </span>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <Badge variant="outline" className="text-[10px] border-[#333] text-[#777]">
-                                {task.estimated_time}
+                            {isNext && (
+                              <Badge className="bg-[#DC2626] text-white text-[10px] px-2 py-0">
+                                DO THIS NOW
                               </Badge>
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  "text-[10px]",
-                                  task.cost === "Free"
-                                    ? "border-emerald-500/30 text-emerald-400"
-                                    : "border-amber-500/30 text-amber-400"
-                                )}
-                              >
-                                {task.cost}
-                              </Badge>
-                            </div>
+                            )}
                           </div>
-                          <p className="text-xs text-[#555] mt-1 leading-relaxed">
-                            {task.description}
-                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-[#555]">{task.estimated_time}</span>
+                            <span className="text-[10px] text-[#333]">|</span>
+                            <span className={cn("text-[10px]", task.cost === "Free" ? "text-emerald-400" : "text-amber-400")}>
+                              {task.cost}
+                            </span>
+                          </div>
                         </div>
+
+                        {/* Action Button */}
+                        <button
+                          onClick={handleToggleTask}
+                          className={cn(
+                            "shrink-0 px-4 py-2 rounded-lg text-xs font-semibold transition-all",
+                            isCompleted
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30"
+                              : isNext
+                                ? "bg-[#DC2626] text-white hover:bg-[#D4691C] shadow-md shadow-[#DC2626]/20"
+                                : "bg-[#1A1A1A] text-[#A3A3A3] border border-[#333] hover:border-[#555] hover:text-white"
+                          )}
+                        >
+                          {isCompleted ? "Undo" : "Mark Done"}
+                        </button>
                       </div>
-                      {isNext && (
-                        <div className="mt-2 pl-6">
-                          <Badge className="bg-[#E87420]/20 text-[#E87420] border-[#E87420]/30 text-[10px]">
-                            Next Step
-                          </Badge>
+
+                      {/* Expandable Description */}
+                      <div className={cn(
+                        "px-4 pb-4 pl-[60px]",
+                        isNext ? "block" : "block"
+                      )}>
+                        <p className="text-xs text-[#777] leading-relaxed">
+                          {task.description}
+                        </p>
+                      </div>
+
+                      {/* Connector Line (except last) */}
+                      {index < tasks.length - 1 && (
+                        <div className="flex justify-start pl-[30px]">
+                          <div className={cn(
+                            "w-0.5 h-3 -mb-3 relative z-10",
+                            isCompleted ? "bg-emerald-500/50" : "bg-[#1A1A1A]"
+                          )} />
                         </div>
                       )}
                     </div>
                   );
                 })
+              )}
+
+              {/* Completion Message */}
+              {tasks.length > 0 && tasks.every(t => t.status === "completed") && (
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-center space-y-2">
+                  <div className="text-3xl">🎉</div>
+                  <p className="text-sm font-semibold text-emerald-400">LLC Setup Complete!</p>
+                  <p className="text-xs text-[#777]">Your business structure is ready. You can now receive payments professionally.</p>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -608,17 +693,17 @@ export function LLCDashboard({ setup, onFieldChange, standalone = false }: LLCDa
                   className={cn(
                     "rounded-lg border p-4 space-y-2 relative",
                     isRecommended
-                      ? "border-[#E87420]/40 bg-[#E87420]/5"
-                      : "border-[#1F1F1F] bg-[#0A0A0A]"
+                      ? "border-[#DC2626]/40 bg-[#DC2626]/5"
+                      : "border-[#1A1A1A] bg-black"
                   )}
                 >
                   {isRecommended && (
-                    <Badge className="absolute -top-2 right-2 bg-[#E87420] text-white text-[10px]">
+                    <Badge className="absolute -top-2 right-2 bg-[#DC2626] text-white text-[10px]">
                       Recommended
                     </Badge>
                   )}
                   <h4 className="text-sm font-medium text-white">{svc.name}</h4>
-                  <p className="text-xs text-[#E87420] font-medium">{svc.cost}</p>
+                  <p className="text-xs text-[#DC2626] font-medium">{svc.cost}</p>
                   <p className="text-[10px] text-[#777]">
                     Difficulty: {svc.difficulty}
                   </p>

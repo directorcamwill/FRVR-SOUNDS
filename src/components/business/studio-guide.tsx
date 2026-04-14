@@ -119,7 +119,7 @@ export function StudioGuide() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Headphones className="size-4 text-[#E87420]" />
+            <Headphones className="size-4 text-[#DC2626]" />
             Studio Setup Guide
           </CardTitle>
           <p className="text-xs text-[#A3A3A3]">
@@ -137,7 +137,7 @@ export function StudioGuide() {
                 onClick={() => setSelectedTier(key)}
                 className={cn(
                   "text-xs",
-                  selectedTier === key && "bg-[#E87420] hover:bg-[#E87420]/90"
+                  selectedTier === key && "bg-[#DC2626] hover:bg-[#DC2626]/90"
                 )}
               >
                 {GEAR_TIERS[key].label}
@@ -158,9 +158,9 @@ export function StudioGuide() {
               return (
                 <div
                   key={item.name}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-[#0A0A0A] border border-[#1F1F1F]"
+                  className="flex items-center gap-3 p-3 rounded-lg bg-black border border-[#1A1A1A]"
                 >
-                  <div className="flex items-center justify-center size-6 rounded bg-[#1A1A1A] text-[10px] font-bold text-[#E87420]">
+                  <div className="flex items-center justify-center size-6 rounded bg-[#1A1A1A] text-[10px] font-bold text-[#DC2626]">
                     {item.priority}
                   </div>
                   <Icon className="size-4 text-[#555]" />
@@ -216,7 +216,7 @@ export function StudioGuide() {
                       key={i}
                       className="flex items-start gap-2 text-xs text-[#A3A3A3]"
                     >
-                      <span className="text-[#E87420] mt-0.5 shrink-0">
+                      <span className="text-[#DC2626] mt-0.5 shrink-0">
                         &bull;
                       </span>
                       {tip}

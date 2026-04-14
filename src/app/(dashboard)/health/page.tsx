@@ -155,7 +155,7 @@ export default function HealthPage() {
         {refreshing ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="size-10 text-[#E87420] animate-spin mb-4" />
+              <Loader2 className="size-10 text-[#DC2626] animate-spin mb-4" />
               <h3 className="text-lg font-medium text-white mb-1">
                 Calculating Health Score...
               </h3>
@@ -325,7 +325,7 @@ export default function HealthPage() {
             <ul className="space-y-2">
               {health.recommendations.map((rec, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 className="size-4 text-[#E87420] mt-0.5 shrink-0" />
+                  <CheckCircle2 className="size-4 text-[#DC2626] mt-0.5 shrink-0" />
                   <span className="text-[#A3A3A3]">{rec}</span>
                 </li>
               ))}

@@ -94,15 +94,15 @@ export function NotificationsPopover() {
       >
         <Bell className="size-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-[#E87420] text-[10px] font-bold text-white flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-red-600 text-[10px] font-bold text-white flex items-center justify-center shadow-lg shadow-red-600/30">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 w-80 bg-[#0A0A0A] border border-[#1F1F1F] rounded-lg shadow-xl z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1F1F1F]">
+        <div className="absolute right-0 top-10 w-80 bg-black border border-[#1A1A1A] rounded-lg shadow-xl z-50 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1A1A1A]">
             <h3 className="text-sm font-semibold text-white">Notifications</h3>
             {unreadCount > 0 && (
               <button
@@ -129,7 +129,7 @@ export function NotificationsPopover() {
                   <div
                     key={alert.id}
                     onClick={() => handleAlertClick(alert)}
-                    className={`px-4 py-3 border-b border-[#1F1F1F] last:border-b-0 hover:bg-[#111111] transition-colors ${alert.action_url ? "cursor-pointer" : ""}`}
+                    className={`px-4 py-3 border-b border-[#1A1A1A] last:border-b-0 hover:bg-[#111111] transition-colors ${alert.action_url ? "cursor-pointer" : ""}`}
                   >
                     <div className="flex items-start gap-3">
                       <Icon className={`size-4 mt-0.5 shrink-0 ${config.color}`} />

@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -20,6 +19,12 @@ const URGENCY_STYLES: Record<string, string> = {
   low: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
 };
 
+const URGENCY_GLOW: Record<string, string> = {
+  high: "hover:shadow-[0_0_20px_rgba(220,38,38,0.15)]",
+  medium: "hover:shadow-[0_0_20px_rgba(245,158,11,0.15)]",
+  low: "hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]",
+};
+
 export function PriorityActions({
   actions,
   loading,
@@ -33,13 +38,13 @@ export function PriorityActions({
 }) {
   if (loading) {
     return (
-      <Card>
+      <Card className="glass-card border-[#1A1A1A]">
         <CardHeader>
-          <CardTitle>Priority Actions</CardTitle>
+          <CardTitle>Next Best Actions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="p-3 rounded-lg bg-[#111] space-y-2">
+            <div key={i} className="p-3 rounded-lg bg-white/[0.02] space-y-2">
               <Skeleton className="h-4 w-2/3" />
               <Skeleton className="h-3 w-full" />
             </div>
@@ -50,21 +55,21 @@ export function PriorityActions({
   }
 
   return (
-    <Card>
+    <Card className="glass-card border-[#1A1A1A]">
       <CardHeader>
-        <CardTitle>Priority Actions</CardTitle>
+        <CardTitle>Next Best Actions</CardTitle>
         {focusArea && (
-          <p className="text-xs text-[#E87420] mt-1">
+          <p className="text-xs text-red-500 mt-1">
             Focus: {focusArea}
           </p>
         )}
       </CardHeader>
       <CardContent>
         {healthSummary && (
-          <p className="text-sm text-[#A3A3A3] mb-4">{healthSummary}</p>
+          <p className="text-sm text-[#666] mb-4">{healthSummary}</p>
         )}
         {actions.length === 0 ? (
-          <p className="text-sm text-[#A3A3A3]">
+          <p className="text-sm text-[#666]">
             No priority actions right now. Add songs to your vault to get
             started.
           </p>
@@ -74,7 +79,7 @@ export function PriorityActions({
               <Link
                 key={i}
                 href={action.action_url}
-                className="flex items-start gap-3 p-3 rounded-lg bg-[#111] hover:bg-[#1A1A1A] transition-colors group"
+                className={`flex items-start gap-3 p-3 rounded-lg glass-card transition-all duration-300 group ${URGENCY_GLOW[action.urgency] || ""}`}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -87,11 +92,11 @@ export function PriorityActions({
                       {action.title}
                     </span>
                   </div>
-                  <p className="text-xs text-[#A3A3A3] line-clamp-2">
+                  <p className="text-xs text-[#666] line-clamp-2">
                     {action.description}
                   </p>
                 </div>
-                <ChevronRight className="size-4 text-[#555] group-hover:text-[#A3A3A3] mt-1 shrink-0" />
+                <ChevronRight className="size-4 text-[#555] group-hover:text-red-500 mt-1 shrink-0 transition-colors" />
               </Link>
             ))}
           </div>

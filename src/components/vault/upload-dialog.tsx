@@ -169,7 +169,7 @@ export function UploadDialog({ onSuccess }: UploadDialogProps) {
             className={cn(
               "relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors cursor-pointer",
               dragActive
-                ? "border-[#E87420] bg-[#E87420]/5"
+                ? "border-[#DC2626] bg-[#DC2626]/5"
                 : file
                   ? "border-emerald-500/50 bg-emerald-500/5"
                   : "border-[#333] hover:border-[#555]"

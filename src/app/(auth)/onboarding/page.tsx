@@ -127,7 +127,7 @@ export default function OnboardingPage() {
             <Label htmlFor="pro">PRO Affiliation</Label>
             <select
               id="pro"
-              className="flex h-9 w-full rounded-md border border-[#1F1F1F] bg-[#0A0A0A] px-3 py-1 text-sm text-white"
+              className="flex h-9 w-full rounded-md border border-[#1A1A1A] bg-black px-3 py-1 text-sm text-white"
               value={proAffiliation}
               onChange={(e) => setProAffiliation(e.target.value)}
             >
@@ -196,8 +196,8 @@ export default function OnboardingPage() {
                   onClick={() => toggleGoal(goal)}
                   className={`rounded-md border px-3 py-2 text-sm text-left transition-colors ${
                     goals.includes(goal)
-                      ? "border-[#E87420] bg-[#E87420]/10 text-[#E87420]"
-                      : "border-[#1F1F1F] text-[#A3A3A3] hover:border-[#333] hover:text-white"
+                      ? "border-[#DC2626] bg-[#DC2626]/10 text-[#DC2626]"
+                      : "border-[#1A1A1A] text-[#A3A3A3] hover:border-[#333] hover:text-white"
                   }`}
                 >
                   {goalLabels[goal] || goal}

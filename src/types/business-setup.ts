@@ -66,6 +66,29 @@ export interface BusinessSetup {
   llc_next_action: LLCTaskItem | null;
   payment_routing_setup: boolean;
 
+  // Business Vault fields
+  llc_filing_date: string | null;
+  llc_formation_state: string | null;
+  llc_registered_agent: string | null;
+  ein_number: string | null;
+  bank_name: string | null;
+  bank_account_type: string | null;
+  pro_member_id: string | null;
+  publisher_ipi: string | null;
+  admin_publisher_name: string | null;
+  admin_publisher_id: string | null;
+  distributor_account_id: string | null;
+  website_url: string | null;
+  epk_url: string | null;
+  business_email: string | null;
+  business_phone: string | null;
+  social_instagram: string | null;
+  social_tiktok: string | null;
+  social_youtube: string | null;
+  social_spotify: string | null;
+  social_apple_music: string | null;
+  notes: string | null;
+
   // Progress
   overall_progress: number;
   phase1_progress: number;

@@ -10,8 +10,12 @@ import {
   Loader2,
   Sparkles,
   Target,
+  Shield,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { KnowledgeLink } from "@/components/learn/knowledge-link";
 import { PhaseCard } from "@/components/business/phase-card";
 import { RecommendationCard } from "@/components/business/recommendation-card";
 import { StudioGuide } from "@/components/business/studio-guide";
@@ -181,7 +185,7 @@ export default function BusinessPage() {
         {refreshing ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="size-10 text-[#E87420] animate-spin mb-4" />
+              <Loader2 className="size-10 text-[#DC2626] animate-spin mb-4" />
               <h3 className="text-lg font-medium text-white mb-1">
                 Setting up your business tracker...
               </h3>
@@ -291,12 +295,12 @@ export default function BusinessPage() {
       {(current_focus || encouragement) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {current_focus && (
-            <Card className="border-[#E87420]/30 bg-[#E87420]/5">
+            <Card className="border-[#DC2626]/30 bg-[#DC2626]/5">
               <CardContent className="py-4">
                 <div className="flex items-start gap-2">
-                  <Target className="size-4 text-[#E87420] mt-0.5 shrink-0" />
+                  <Target className="size-4 text-[#DC2626] mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-xs font-medium text-[#E87420] mb-1">
+                    <p className="text-xs font-medium text-[#DC2626] mb-1">
                       Current Focus
                     </p>
                     <p className="text-sm text-white">{current_focus}</p>
@@ -336,6 +340,43 @@ export default function BusinessPage() {
             onChange={handleFieldChange}
           />
         ))}
+      </div>
+
+      {/* Business Vault CTA */}
+      <Link href="/business/vault" className="block group">
+        <Card className="bg-gradient-to-r from-[#DC2626]/10 to-[#DC2626]/5 border-[#DC2626]/20 hover:border-[#DC2626]/40 transition-all">
+          <CardContent className="py-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-[#DC2626]/15 flex items-center justify-center">
+                <Shield className="size-5 text-[#DC2626]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">
+                  Business Vault
+                </h3>
+                <p className="text-xs text-[#A3A3A3]">
+                  View and manage all your business details in one secure place
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="size-5 text-[#555] group-hover:text-[#DC2626] transition-colors" />
+          </CardContent>
+        </Card>
+      </Link>
+
+      {/* Knowledge Links */}
+      <div className="bg-[#111111] border border-[#1A1A1A] rounded-xl p-4">
+        <p className="text-xs text-[#A3A3A3] uppercase tracking-wider font-medium mb-3">
+          Learn more about building your music business
+        </p>
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          <KnowledgeLink topicId="royalties-overview" label="How Royalties Work" />
+          <KnowledgeLink topicId="pro-registration" label="PRO Registration" />
+          <KnowledgeLink topicId="catalog-ownership" label="Catalog Ownership" />
+          <KnowledgeLink topicId="one-stop-licensing" label="One-Stop Licensing" />
+          <KnowledgeLink topicId="split-sheets" label="Split Sheets" />
+          <KnowledgeLink topicId="music-copyright" label="Copyright Registration" />
+        </div>
       </div>
 
       {/* Studio Guide (Phase 3 helper) */}

@@ -11,6 +11,7 @@ import {
   Zap,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { GlowDot } from "@/components/ui/motion";
 
 interface AgentLog {
   id: string;
@@ -27,7 +28,7 @@ const AGENT_CONFIG: Record<
   { icon: typeof Bot; color: string; label: string }
 > = {
   orchestrator: { icon: Bot, color: "text-blue-400", label: "Orchestrator" },
-  sync_engine: { icon: Sparkles, color: "text-[#E87420]", label: "Sync Engine" },
+  sync_engine: { icon: Sparkles, color: "text-red-500", label: "Sync Engine" },
   health_monitor: { icon: Activity, color: "text-emerald-400", label: "Health" },
   market_intel: { icon: Brain, color: "text-purple-400", label: "Intel" },
   catalog_marketing: { icon: Megaphone, color: "text-pink-400", label: "Marketing" },
@@ -42,9 +43,12 @@ export function ActivityFeed({
 }) {
   if (loading) {
     return (
-      <Card>
+      <Card className="glass-card border-[#1A1A1A]">
         <CardHeader>
-          <CardTitle>Activity Feed</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <GlowDot color="red" size="sm" />
+            AI Live Feed
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -62,26 +66,33 @@ export function ActivityFeed({
   }
 
   return (
-    <Card>
+    <Card className="glass-card border-[#1A1A1A]">
       <CardHeader>
-        <CardTitle>Activity Feed</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <GlowDot color="red" size="sm" />
+          AI Live Feed
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {logs.length === 0 ? (
-          <p className="text-sm text-[#A3A3A3]">No recent activity</p>
+          <p className="text-sm text-[#666]">No recent activity</p>
         ) : (
           <div className="space-y-3">
             {logs.slice(0, 10).map((log) => {
               const config = AGENT_CONFIG[log.agent_type] || {
                 icon: Zap,
-                color: "text-[#A3A3A3]",
+                color: "text-[#666]",
                 label: log.agent_type,
               };
               const Icon = config.icon;
               return (
-                <div key={log.id} className="flex items-start gap-3">
+                <div
+                  key={log.id}
+                  className="flex items-start gap-3 group"
+                  style={{ animation: "fadeSlideIn 0.4s ease-out" }}
+                >
                   <div
-                    className={`flex items-center justify-center size-8 rounded-full bg-[#1A1A1A] shrink-0 ${config.color}`}
+                    className={`flex items-center justify-center size-8 rounded-full bg-white/[0.03] border border-[#1A1A1A] shrink-0 ${config.color} group-hover:border-red-500/20 transition-colors`}
                   >
                     <Icon className="size-4" />
                   </div>

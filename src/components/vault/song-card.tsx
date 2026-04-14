@@ -38,7 +38,7 @@ export function SongCard({ song }: SongCardProps) {
 
   return (
     <Link href={`/vault/${song.id}`}>
-      <Card className="hover:ring-[#E87420]/30 transition-all cursor-pointer group">
+      <Card className="hover:ring-[#DC2626]/30 transition-all cursor-pointer group">
         <CardContent className="space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3 min-w-0">

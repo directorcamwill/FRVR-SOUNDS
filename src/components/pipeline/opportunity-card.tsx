@@ -43,7 +43,7 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
 
   return (
     <Link href={`/pipeline/${opportunity.id}`}>
-      <Card className="hover:ring-[#E87420]/30 transition-all cursor-pointer group">
+      <Card className="hover:ring-[#DC2626]/30 transition-all cursor-pointer group">
         <CardContent className="p-3 space-y-2">
           <h4 className="font-medium text-white text-sm truncate">
             {opportunity.title}

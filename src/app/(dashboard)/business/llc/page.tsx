@@ -62,7 +62,7 @@ export default function LLCPage() {
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Shield className="size-6 text-[#E87420]" />
+            <Shield className="size-6 text-[#DC2626]" />
             LLC Setup Guide
           </h2>
           <p className="text-sm text-[#A3A3A3] mt-1">Loading your LLC analysis...</p>

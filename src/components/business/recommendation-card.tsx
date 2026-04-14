@@ -28,7 +28,7 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
     recommendation;
 
   return (
-    <Card className="border-[#1F1F1F]">
+    <Card className="border-[#1A1A1A]">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">

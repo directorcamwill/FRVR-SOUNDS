@@ -91,7 +91,7 @@ export default function IntelligencePage() {
       {generating && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="size-10 text-[#E87420] animate-spin mb-4" />
+            <Loader2 className="size-10 text-[#DC2626] animate-spin mb-4" />
             <h3 className="text-lg font-medium text-white mb-1">
               Generating Intelligence Brief...
             </h3>

@@ -1,0 +1,23 @@
+-- Add Business Vault columns to business_setup
+ALTER TABLE public.business_setup
+  ADD COLUMN IF NOT EXISTS llc_filing_date DATE,
+  ADD COLUMN IF NOT EXISTS llc_formation_state TEXT,
+  ADD COLUMN IF NOT EXISTS llc_registered_agent TEXT,
+  ADD COLUMN IF NOT EXISTS ein_number TEXT,
+  ADD COLUMN IF NOT EXISTS bank_name TEXT,
+  ADD COLUMN IF NOT EXISTS bank_account_type TEXT,
+  ADD COLUMN IF NOT EXISTS pro_member_id TEXT,
+  ADD COLUMN IF NOT EXISTS publisher_ipi TEXT,
+  ADD COLUMN IF NOT EXISTS admin_publisher_name TEXT,
+  ADD COLUMN IF NOT EXISTS admin_publisher_id TEXT,
+  ADD COLUMN IF NOT EXISTS distributor_account_id TEXT,
+  ADD COLUMN IF NOT EXISTS website_url TEXT,
+  ADD COLUMN IF NOT EXISTS epk_url TEXT,
+  ADD COLUMN IF NOT EXISTS business_email TEXT,
+  ADD COLUMN IF NOT EXISTS business_phone TEXT,
+  ADD COLUMN IF NOT EXISTS social_instagram TEXT,
+  ADD COLUMN IF NOT EXISTS social_tiktok TEXT,
+  ADD COLUMN IF NOT EXISTS social_youtube TEXT,
+  ADD COLUMN IF NOT EXISTS social_spotify TEXT,
+  ADD COLUMN IF NOT EXISTS social_apple_music TEXT,
+  ADD COLUMN IF NOT EXISTS notes TEXT;

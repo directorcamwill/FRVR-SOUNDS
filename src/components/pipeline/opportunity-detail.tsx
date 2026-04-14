@@ -237,7 +237,7 @@ export function OpportunityDetail({
                     href={opportunity.source_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#E87420] hover:underline"
+                    className="text-[#DC2626] hover:underline"
                   >
                     {opportunity.source}
                   </a>

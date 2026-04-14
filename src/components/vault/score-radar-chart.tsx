@@ -42,8 +42,8 @@ export function ScoreRadarChart({ score }: ScoreRadarChartProps) {
         <Radar
           name="Score"
           dataKey="value"
-          stroke="#E87420"
-          fill="#E87420"
+          stroke="#DC2626"
+          fill="#DC2626"
           fillOpacity={0.3}
           strokeWidth={2}
         />

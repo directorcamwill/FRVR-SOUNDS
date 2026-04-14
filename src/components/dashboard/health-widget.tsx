@@ -12,9 +12,9 @@ function scoreColor(score: number) {
 }
 
 function scoreBorderColor(score: number) {
-  if (score >= 70) return "border-emerald-400";
-  if (score >= 40) return "border-amber-400";
-  return "border-red-400";
+  if (score >= 70) return "border-emerald-400 shadow-emerald-400/20";
+  if (score >= 40) return "border-amber-400 shadow-amber-400/20";
+  return "border-red-400 shadow-red-400/20";
 }
 
 interface HealthData {
@@ -35,7 +35,7 @@ export function HealthWidget({
 }) {
   if (loading) {
     return (
-      <Card>
+      <Card className="glass-card border-[#1A1A1A]">
         <CardHeader>
           <CardTitle>Health Score</CardTitle>
         </CardHeader>
@@ -49,12 +49,12 @@ export function HealthWidget({
 
   if (!health) {
     return (
-      <Card>
+      <Card className="glass-card border-[#1A1A1A]">
         <CardHeader>
           <CardTitle>Health Score</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-[#A3A3A3]">
+          <p className="text-sm text-[#666]">
             Complete your profile to see your health score.
           </p>
         </CardContent>
@@ -71,12 +71,12 @@ export function HealthWidget({
   ];
 
   return (
-    <Card>
+    <Card className="glass-card border-[#1A1A1A]">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Health Score</CardTitle>
         <Link
           href="/health"
-          className="text-xs text-[#E87420] hover:underline"
+          className="text-xs text-red-500 hover:text-red-400 transition-colors"
         >
           View Details
         </Link>
@@ -85,7 +85,7 @@ export function HealthWidget({
         <div className="flex flex-col items-center mb-4">
           <div
             className={cn(
-              "flex items-center justify-center size-20 rounded-full border-4",
+              "flex items-center justify-center size-20 rounded-full border-4 shadow-lg",
               scoreBorderColor(health.overall_score)
             )}
           >
@@ -98,13 +98,13 @@ export function HealthWidget({
               {health.overall_score}
             </span>
           </div>
-          <p className="text-xs text-[#A3A3A3] mt-2">Overall Score</p>
+          <p className="text-xs text-[#666] mt-2">Overall Score</p>
         </div>
         <div className="space-y-2">
           {categories.map((cat) => (
             <div key={cat.label}>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-[#A3A3A3]">{cat.label}</span>
+                <span className="text-[#666]">{cat.label}</span>
                 <span
                   className={cn(
                     "font-medium tabular-nums",
