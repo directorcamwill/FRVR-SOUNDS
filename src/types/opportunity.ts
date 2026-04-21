@@ -1,3 +1,5 @@
+import type { Song } from "./song";
+
 export type OpportunityType =
   | "tv"
   | "film"
@@ -29,6 +31,58 @@ export type SubmissionStatus =
   | "rejected"
   | "expired";
 
+export interface SyncBriefDetails {
+  format_family:
+    | "tv_episode"
+    | "film"
+    | "ad_30"
+    | "ad_60"
+    | "ad_15"
+    | "trailer"
+    | "game"
+    | "web_social"
+    | "podcast"
+    | "library"
+    | "other";
+  mood_primary: string;
+  mood_secondary?: string | null;
+  energy_target?: number | null;
+  bpm_range?: { min: number; max: number } | null;
+  key_preference?: "major" | "minor" | "either" | null;
+  vocal_policy?: "allowed" | "instrumental_only" | "tv_mix_ok" | null;
+  dialogue_safe_required?: boolean;
+  cutdowns_needed?: string[];
+  lyric_themes_preferred?: string[];
+  lyric_themes_avoid?: string[];
+  explicit_allowed?: boolean;
+  one_stop_required?: boolean;
+  similar_placements?: string[];
+  target_libraries?: string[];
+  exclusivity_acceptable?: boolean;
+  notes?: string;
+  confidence?: number;
+  reasoning?: string;
+  generated_at?: string;
+  model_used?: string;
+}
+
+export interface PlacementDnaCache {
+  format_family: string;
+  bpm_band?: { min: number; max: number } | null;
+  intro_max_seconds?: number | null;
+  impact_point_seconds?: number | null;
+  density?: "sparse" | "medium" | "dense" | null;
+  arrangement_priorities?: string[];
+  common_tags_in_wins?: string[];
+  dominant_moods?: string[];
+  sample_size: number;
+  win_rate_estimate?: number | null;
+  confidence?: number;
+  reasoning?: string;
+  generated_at?: string;
+  model_used?: string;
+}
+
 export interface Opportunity {
   id: string;
   artist_id: string;
@@ -48,6 +102,11 @@ export interface Opportunity {
   stage: OpportunityStage;
   created_at: string;
   updated_at: string;
+  // P2 additions (migration 00011)
+  brief_details?: SyncBriefDetails | null;
+  brief_structured_at?: string | null;
+  placement_dna_cache?: PlacementDnaCache | null;
+  placement_dna_cached_at?: string | null;
   opportunity_matches?: OpportunityMatch[];
 }
 
@@ -57,10 +116,13 @@ export interface OpportunityMatch {
   song_id: string;
   fit_score: number;
   fit_reasons: string[];
+  confidence: number | null;
   status: MatchStatus;
   matched_by: "ai" | "manual";
   created_at: string;
-  song?: { id: string; title: string; sync_scores?: { overall_score: number }[] };
+  // Nested song — populated by the matches API with full metadata + stems + sync_scores
+  // so the pipeline can render readiness per match without extra fetches.
+  song?: Partial<Song> & { id: string; title: string };
 }
 
 export interface Submission {

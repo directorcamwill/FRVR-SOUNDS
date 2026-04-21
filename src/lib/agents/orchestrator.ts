@@ -72,6 +72,12 @@ export async function runOrchestrator(artistId: string) {
 
 Prioritize actions that directly lead to income: completing sync-ready tracks, submitting to opportunities, fixing metadata gaps.
 
+Each action must include a self-assessed confidence (0.0–1.0) reflecting how certain you are the action is correctly prioritized given the data. Lower it when signals are sparse or conflicting. Also return a top-level confidence for the overall recommendation set.
+- 0.90–1.00: Strong signal, clear next step, low ambiguity.
+- 0.70–0.89: Good call with some assumptions.
+- 0.50–0.69: Directional — artist should validate.
+- Below 0.50: Insufficient data; flag as review.
+
 Return JSON:
 {
   "priority_actions": [
@@ -80,11 +86,13 @@ Return JSON:
       "description": "1-2 sentence explanation of why and what to do",
       "urgency": "high" | "medium" | "low",
       "action_url": "/vault" or "/pipeline" or "/submissions" etc,
-      "category": "sync_readiness" | "opportunity" | "metadata" | "submission" | "catalog"
+      "category": "sync_readiness" | "opportunity" | "metadata" | "submission" | "catalog",
+      "confidence": <0.0-1.0>
     }
   ],
   "health_summary": "1 sentence overall assessment",
-  "focus_area": "the single most important thing to focus on"
+  "focus_area": "the single most important thing to focus on",
+  "confidence": <0.0-1.0>
 }`;
 
   const userMessage = `## ARTIST: ${artist?.artist_name || "Unknown"}

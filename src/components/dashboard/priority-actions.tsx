@@ -2,15 +2,17 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfidencePill } from "@/components/ui/motion";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
-interface PriorityAction {
+export interface PriorityAction {
   title: string;
   description: string;
   urgency: "high" | "medium" | "low";
   action_url: string;
   category: string;
+  confidence?: number | null;
 }
 
 const URGENCY_STYLES: Record<string, string> = {
@@ -82,7 +84,7 @@ export function PriorityActions({
                 className={`flex items-start gap-3 p-3 rounded-lg glass-card transition-all duration-300 group ${URGENCY_GLOW[action.urgency] || ""}`}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span
                       className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider border ${URGENCY_STYLES[action.urgency] || URGENCY_STYLES.low}`}
                     >
@@ -91,6 +93,12 @@ export function PriorityActions({
                     <span className="text-sm font-medium text-white truncate">
                       {action.title}
                     </span>
+                    {action.confidence != null && (
+                      <ConfidencePill
+                        score={action.confidence}
+                        showLabel={false}
+                      />
+                    )}
                   </div>
                   <p className="text-xs text-[#666] line-clamp-2">
                     {action.description}

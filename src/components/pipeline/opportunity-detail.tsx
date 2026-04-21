@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OpportunityForm } from "./opportunity-form";
 import { MatchPanel } from "./match-panel";
+import { BriefIntelligence } from "./brief-intelligence";
 import {
   ArrowLeft,
   Building2,
@@ -314,6 +315,9 @@ export function OpportunityDetail({
           )}
         </CardContent>
       </Card>
+
+      {/* Brief Intelligence */}
+      <BriefIntelligence opportunity={opportunity} onRefresh={onRefresh} />
 
       {/* Match Panel */}
       <MatchPanel

@@ -6,6 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { ConfidencePill } from "@/components/ui/motion";
+import {
+  SyncReadinessMeter,
+  computeSyncReadiness,
+} from "@/components/vault/sync-readiness-meter";
 import { Zap, Check, X, Send, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { OpportunityMatch } from "@/types/opportunity";
@@ -101,10 +106,40 @@ export function MatchPanel({
     }
   };
 
+  const readinessSummary = matches.reduce(
+    (acc, m) => {
+      if (!m.song) return acc;
+      const { percent } = computeSyncReadiness({ song: m.song });
+      if (percent >= 85) acc.ready += 1;
+      else if (percent >= 60) acc.close += 1;
+      else acc.blocked += 1;
+      return acc;
+    },
+    { ready: 0, close: 0, blocked: 0 }
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-white">Song Matches</h3>
+        <div>
+          <h3 className="text-lg font-medium text-white">Song Matches</h3>
+          {matches.length > 0 && (
+            <p className="text-xs text-[#A3A3A3] mt-1">
+              <span className="text-emerald-400 font-medium tabular-nums">
+                {readinessSummary.ready}
+              </span>{" "}
+              ready ·{" "}
+              <span className="text-[#c0c8d8] font-medium tabular-nums">
+                {readinessSummary.close}
+              </span>{" "}
+              close ·{" "}
+              <span className="text-red-400 font-medium tabular-nums">
+                {readinessSummary.blocked}
+              </span>{" "}
+              blocked
+            </p>
+          )}
+        </div>
         <Button onClick={handleFindMatches} disabled={matching} size="sm">
           <Zap className="size-4 mr-2" />
           {matching ? "Matching..." : "Find Matches"}
@@ -142,7 +177,7 @@ export function MatchPanel({
               <CardContent className="p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-medium text-white text-sm truncate">
                         {match.song?.title || "Unknown Song"}
                       </span>
@@ -154,6 +189,9 @@ export function MatchPanel({
                       >
                         {match.fit_score}%
                       </Badge>
+                      {match.confidence != null && (
+                        <ConfidencePill score={match.confidence} showLabel={false} />
+                      )}
                       {match.status !== "suggested" && (
                         <Badge
                           variant={
@@ -175,6 +213,14 @@ export function MatchPanel({
                           <li key={i}>- {reason}</li>
                         ))}
                       </ul>
+                    )}
+                    {match.song && (
+                      <div className="mt-2">
+                        <SyncReadinessMeter
+                          song={match.song}
+                          variant="compact"
+                        />
+                      </div>
                     )}
                   </div>
 

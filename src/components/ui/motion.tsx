@@ -1,7 +1,117 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
+
+// Ambient background — drifting cyan + white orbs layered under content.
+// Complements the existing static red glow in the dashboard shell; we keep
+// that in place and add complementary depth here (EVOLUTION_PLAN §5.4).
+// Honors prefers-reduced-motion: renders static orbs instead of animating.
+export function AmbientOrbs({ className }: { className?: string }) {
+  const reduce = useReducedMotion();
+
+  const orbs = [
+    {
+      key: "cyan",
+      size: 400,
+      background: "#22d3ee",
+      opacity: 0.035,
+      position: { bottom: -160, left: -80 } as const,
+      delay: -10,
+    },
+    {
+      key: "white",
+      size: 300,
+      background: "#ffffff",
+      opacity: 0.012,
+      position: { top: "40%", left: "40%" } as const,
+      delay: -18,
+    },
+    {
+      key: "red-drift",
+      size: 360,
+      background: "#dc2626",
+      opacity: 0.045,
+      position: { top: -140, left: "45%" } as const,
+      delay: -4,
+    },
+  ];
+
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "fixed inset-0 pointer-events-none overflow-hidden z-0",
+        className
+      )}
+    >
+      {orbs.map((orb) => {
+        const style = {
+          width: orb.size,
+          height: orb.size,
+          background: orb.background,
+          opacity: orb.opacity,
+          filter: "blur(140px)",
+          ...orb.position,
+        };
+        if (reduce) {
+          return (
+            <div
+              key={orb.key}
+              className="absolute rounded-full"
+              style={style}
+            />
+          );
+        }
+        return (
+          <motion.div
+            key={orb.key}
+            className="absolute rounded-full"
+            style={style}
+            animate={{
+              x: [0, 40, -30, 0],
+              y: [0, -30, 40, 0],
+            }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: orb.delay,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+// Thin cinematic scanline sweeping vertically across the viewport.
+// Very low opacity so it reads as ambient signal, not chrome.
+// Omitted entirely under prefers-reduced-motion.
+export function Scanline() {
+  const reduce = useReducedMotion();
+  if (reduce) return null;
+
+  return (
+    <motion.div
+      aria-hidden
+      className="fixed inset-x-0 pointer-events-none z-0"
+      style={{
+        height: 2,
+        background:
+          "linear-gradient(90deg, transparent, #dc2626, #22d3ee, transparent)",
+        opacity: 0.14,
+      }}
+      initial={{ top: -2 }}
+      animate={{ top: "100vh" }}
+      transition={{
+        duration: 8,
+        repeat: Infinity,
+        ease: "linear",
+      }}
+    />
+  );
+}
 
 // Animated card that fades in and lifts on hover
 export function MotionCard({ children, className, delay = 0, ...props }: {
@@ -88,6 +198,58 @@ export function GlowDot({ color = "red", size = "sm" }: { color?: "red" | "green
       transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       className={cn("rounded-full shadow-lg", colors[color], sizes[size])}
     />
+  );
+}
+
+// Confidence pill — surfaces AI self-assessed certainty (0-1).
+// Thresholds per UPGRADE_SPEC: >=0.85 emerald, 0.70-0.84 chrome, <0.70 red.
+// Renders null when score is null/undefined/out-of-range so we never lie about signal.
+export function ConfidencePill({
+  score,
+  className,
+  showLabel = true,
+}: {
+  score: number | null | undefined;
+  className?: string;
+  showLabel?: boolean;
+}) {
+  if (score == null || !Number.isFinite(score) || score < 0 || score > 1) {
+    return null;
+  }
+
+  const pct = Math.round(score * 100);
+  const tier =
+    score >= 0.85 ? "high" : score >= 0.7 ? "mid" : "low";
+
+  const styles = {
+    high: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+    mid: "border-[#c0c8d8]/30 bg-[#c0c8d8]/10 text-[#c0c8d8]",
+    low: "border-red-500/40 bg-red-500/10 text-red-300",
+  } as const;
+
+  const label = {
+    high: "High confidence",
+    mid: "Moderate confidence",
+    low: "Low — review",
+  } as const;
+
+  return (
+    <span
+      role="status"
+      aria-label={`AI confidence ${pct}% — ${label[tier]}`}
+      title={label[tier]}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5",
+        "text-[10px] font-medium uppercase tracking-[0.15em] tabular-nums",
+        "motion-safe:transition-colors motion-safe:duration-300",
+        styles[tier],
+        className
+      )}
+    >
+      <span className="size-1.5 rounded-full bg-current opacity-80" />
+      <span>{pct}%</span>
+      {showLabel && <span className="opacity-70">conf</span>}
+    </span>
   );
 }
 

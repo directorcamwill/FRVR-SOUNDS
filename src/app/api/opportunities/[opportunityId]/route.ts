@@ -20,7 +20,15 @@ export async function GET(
       *,
       opportunity_matches(
         *,
-        song:songs(id, title, sync_scores(overall_score))
+        song:songs(
+          id,
+          title,
+          duration_seconds,
+          status,
+          song_metadata(*),
+          stems(*),
+          sync_scores(*)
+        )
       )
     `
     )

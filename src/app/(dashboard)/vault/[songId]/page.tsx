@@ -5,7 +5,17 @@ import Link from "next/link";
 import { useSong } from "@/lib/hooks/use-songs";
 import { MetadataForm } from "@/components/vault/metadata-form";
 import { SyncScoreDisplay } from "@/components/vault/sync-score-display";
+import { SyncReadinessMeter } from "@/components/vault/sync-readiness-meter";
+import { ArtifactGrid } from "@/components/vault/artifact-grid";
+import { PackageBuilderPanel } from "@/components/vault/package-builder-panel";
+import { BrandFitPanel } from "@/components/vault/brand-fit-panel";
+import { PlacementMatchesPanel } from "@/components/vault/placement-matches-panel";
+import { PatternInsightsPanel } from "@/components/vault/pattern-insights-panel";
+import { SupervisorMatchesPanel } from "@/components/vault/supervisor-matches-panel";
+import { GuidedRecsPanel } from "@/components/vault/guided-recs-panel";
+import { TrackAnalysisHeader } from "@/components/vault/track-analysis-header";
 import { StemsManager } from "@/components/vault/stems-manager";
+import type { GuidedRecsOutput } from "@/lib/agents/guided-recs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -69,6 +79,8 @@ export default function SongDetailPage({
         </div>
       </div>
 
+      <TrackAnalysisHeader song={song} />
+
       {/* Audio Player */}
       {song.file_url && (
         <div className="rounded-lg bg-[#111] p-4">
@@ -85,8 +97,28 @@ export default function SongDetailPage({
       <div className="hidden lg:grid lg:grid-cols-[1fr_380px] lg:gap-6">
         <div className="space-y-6">
           <MetadataForm song={song} />
+          <ArtifactGrid songId={song.id} />
         </div>
         <div className="space-y-6">
+          <SyncReadinessMeter song={song} variant="full" />
+          <BrandFitPanel
+            songId={song.id}
+            initialStatus={song.brand_fit_status ?? null}
+            initialCheckedAt={song.brand_fit_checked_at ?? null}
+          />
+          <PlacementMatchesPanel song={song} />
+          <SupervisorMatchesPanel song={song} />
+          <PatternInsightsPanel song={song} />
+          <GuidedRecsPanel
+            songId={song.id}
+            initial={(song as { guided_recs?: GuidedRecsOutput | null }).guided_recs ?? null}
+            initialAt={(song as { guided_recs_at?: string | null }).guided_recs_at ?? null}
+          />
+          <PackageBuilderPanel
+            songId={song.id}
+            initialStatus={song.package_status ?? null}
+            initialCheckedAt={song.package_checked_at ?? null}
+          />
           <SyncScoreDisplay
             songId={song.id}
             score={latestScore}
@@ -106,17 +138,39 @@ export default function SongDetailPage({
           <TabsList>
             <TabsTrigger value="metadata">Metadata</TabsTrigger>
             <TabsTrigger value="score">Score</TabsTrigger>
+            <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
             <TabsTrigger value="stems">Stems</TabsTrigger>
           </TabsList>
           <TabsContent value="metadata" className="mt-4">
             <MetadataForm song={song} />
           </TabsContent>
-          <TabsContent value="score" className="mt-4">
+          <TabsContent value="score" className="mt-4 space-y-4">
+            <SyncReadinessMeter song={song} variant="full" />
+            <BrandFitPanel
+              songId={song.id}
+              initialStatus={song.brand_fit_status ?? null}
+              initialCheckedAt={song.brand_fit_checked_at ?? null}
+            />
+            <PlacementMatchesPanel song={song} />
+            <PatternInsightsPanel song={song} />
+            <GuidedRecsPanel
+              songId={song.id}
+              initial={(song as { guided_recs?: GuidedRecsOutput | null }).guided_recs ?? null}
+              initialAt={(song as { guided_recs_at?: string | null }).guided_recs_at ?? null}
+            />
+            <PackageBuilderPanel
+              songId={song.id}
+              initialStatus={song.package_status ?? null}
+              initialCheckedAt={song.package_checked_at ?? null}
+            />
             <SyncScoreDisplay
               songId={song.id}
               score={latestScore}
               onScored={refetch}
             />
+          </TabsContent>
+          <TabsContent value="artifacts" className="mt-4">
+            <ArtifactGrid songId={song.id} />
           </TabsContent>
           <TabsContent value="stems" className="mt-4">
             <StemsManager

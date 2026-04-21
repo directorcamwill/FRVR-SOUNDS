@@ -12,6 +12,56 @@ export interface Song {
   song_metadata?: SongMetadata | null;
   sync_scores?: SyncScore[];
   stems?: Stem[];
+  // P1 capstone (migration 00012) — cached package readiness
+  package_status?: PackageStatusSummary | null;
+  package_checked_at?: string | null;
+  // Sprint D (migration 00016) — cached brand fit grade
+  brand_fit_status?: BrandFitStatusSummary | null;
+  brand_fit_checked_at?: string | null;
+}
+
+export interface BrandFitDimensionSummary {
+  key: string;
+  label: string;
+  score: number;
+  status: "aligned" | "partial" | "deviation";
+  note: string;
+}
+
+export interface BrandFitStatusSummary {
+  overall_score: number;
+  alignment_tier: "high" | "mid" | "low";
+  dimensions: BrandFitDimensionSummary[];
+  strengths: string[];
+  deviations: string[];
+  suggestions: string[];
+  confidence: number | null;
+  reasoning: string;
+  generated_at: string;
+  model_used: string;
+}
+
+// Mirror of PackageStatus from src/lib/agents/package-builder.ts.
+// Duplicated here (not imported) so client components don't bring the agent
+// module into the client bundle.
+export interface PackageStatusSummary {
+  ready: boolean;
+  completeness_pct: number;
+  blockers: Array<{
+    type:
+      | "metadata"
+      | "sync_metadata"
+      | "splits"
+      | "registrations"
+      | "artifacts"
+      | "sync_score";
+    severity: "high" | "medium" | "low";
+    message: string;
+    action_url: string;
+  }>;
+  checklist: Array<{ key: string; label: string; done: boolean }>;
+  one_sheet_markdown: string;
+  generated_at: string;
 }
 
 export interface SongMetadata {
@@ -35,6 +85,12 @@ export interface SongMetadata {
   instrumental_available: boolean;
   similar_artists: string[];
   description: string | null;
+  // Sync Readiness fields (migration 00010)
+  scene_tags?: string[];
+  dialogue_safe_score?: number | null;
+  cutdown_points?: number[];
+  loop_points?: number[];
+  tv_mix_available?: boolean;
 }
 
 export interface Stem {
@@ -58,6 +114,7 @@ export interface SyncScore {
   market_fit_score: number;
   brand_safety_score: number;
   deliverables_score: number;
+  confidence: number | null;
   ai_analysis: string | null;
   ai_recommendations: string[];
   scoring_version: number;

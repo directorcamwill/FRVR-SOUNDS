@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScoreBadge } from "@/components/shared/score-badge";
+import { SyncReadinessMeter } from "@/components/vault/sync-readiness-meter";
 import { Music, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Song } from "@/types/song";
@@ -71,6 +72,7 @@ export function SongCard({ song }: SongCardProps) {
               <ScoreBadge score={latestScore.overall_score} size="sm" />
             )}
           </div>
+          <SyncReadinessMeter song={song} variant="compact" />
         </CardContent>
       </Card>
     </Link>

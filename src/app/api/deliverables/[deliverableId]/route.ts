@@ -24,6 +24,13 @@ export async function PATCH(
     "target_date",
     "status",
     "priority",
+    // Artifact fields (migration 00010)
+    "artifact_type",
+    "song_id",
+    "lufs_target",
+    "true_peak_target",
+    "qc_passed",
+    "file_key",
   ];
   for (const [k, v] of Object.entries(body)) {
     if (allowed.includes(k)) updateFields[k] = v;

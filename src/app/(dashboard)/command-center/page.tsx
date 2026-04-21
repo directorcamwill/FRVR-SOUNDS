@@ -9,8 +9,30 @@ import Link from "next/link";
 import { PriorityActions } from "@/components/dashboard/priority-actions";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { HealthWidget } from "@/components/dashboard/health-widget";
+import { FocusBar } from "@/components/dashboard/focus-bar";
+import { Spine } from "@/components/dashboard/spine";
+import { NextMoves } from "@/components/dashboard/next-moves";
+import { PipelinePulse } from "@/components/dashboard/pipeline-pulse";
+import { CurrentRecord } from "@/components/dashboard/current-record";
+import { HealthReviewPanel } from "@/components/dashboard/health-review-panel";
+import { AmbientActivityFeed } from "@/components/dashboard/ambient-activity-feed";
+import type { SpineResponse } from "@/app/api/spine/route";
+import type { ReviewQueueResponse } from "@/app/api/review-queue/route";
+import type { Opportunity } from "@/types/opportunity";
+import type { Song } from "@/types/song";
 import { MotionCard, AnimatedNumber, GlowDot, GlowCard } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
+
+const V2_COMMAND_CENTER =
+  process.env.NEXT_PUBLIC_V2_COMMAND_CENTER === "true";
+
+function pickLatestSong(songs: Song[]): Song | null {
+  if (!songs.length) return null;
+  return [...songs].sort(
+    (a, b) =>
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+  )[0];
+}
 
 interface OrchestratorResult {
   priority_actions: {
@@ -19,9 +41,11 @@ interface OrchestratorResult {
     urgency: "high" | "medium" | "low";
     action_url: string;
     category: string;
+    confidence?: number | null;
   }[];
   health_summary: string;
   focus_area: string;
+  confidence?: number | null;
 }
 
 interface HealthScore {
@@ -50,6 +74,14 @@ export default function CommandCenterPage() {
   const [songCount, setSongCount] = useState(0);
   const [pipelineCount, setPipelineCount] = useState(0);
   const [submissionCount, setSubmissionCount] = useState(0);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [songs, setSongs] = useState<Song[]>([]);
+
+  const [spine, setSpine] = useState<SpineResponse | null>(null);
+  const [loadingSpine, setLoadingSpine] = useState(true);
+
+  const [review, setReview] = useState<ReviewQueueResponse | null>(null);
+  const [loadingReview, setLoadingReview] = useState(true);
 
   const [deliverablesSummary, setDeliverablesSummary] = useState<{
     total: number;
@@ -63,12 +95,39 @@ export default function CommandCenterPage() {
     total_overdue: number;
   } | null>(null);
 
+  const [todayTasksRaw, setTodayTasksRaw] = useState<
+    Array<{
+      id: string;
+      title: string;
+      description?: string | null;
+      category?: string | null;
+      priority?: string | null;
+      status?: string | null;
+      due_date?: string | null;
+    }>
+  >([]);
+  const [overdueTasksRaw, setOverdueTasksRaw] = useState<
+    typeof todayTasksRaw
+  >([]);
+  const [alertsRaw, setAlertsRaw] = useState<
+    Array<{
+      id: string;
+      title: string;
+      message: string;
+      severity: string;
+      agent_type?: string | null;
+      action_url?: string | null;
+    }>
+  >([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
+
   const [loadingOrchestrator, setLoadingOrchestrator] = useState(true);
   const [loadingHealth, setLoadingHealth] = useState(true);
   const [loadingActivity, setLoadingActivity] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingOps, setLoadingOps] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
 
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
@@ -79,15 +138,21 @@ export default function CommandCenterPage() {
         fetch("/api/submissions"),
       ]);
       if (songsRes.ok) {
-        const songs = await songsRes.json();
-        setSongCount(Array.isArray(songs) ? songs.length : 0);
+        const songsData = await songsRes.json();
+        if (Array.isArray(songsData)) {
+          setSongs(songsData);
+          setSongCount(songsData.length);
+        }
       }
       if (oppsRes.ok) {
         const opps = await oppsRes.json();
-        const active = Array.isArray(opps)
-          ? opps.filter((o: { stage: string }) => !["won", "lost"].includes(o.stage))
-          : [];
-        setPipelineCount(active.length);
+        if (Array.isArray(opps)) {
+          setOpportunities(opps);
+          const active = opps.filter(
+            (o: { stage: string }) => !["won", "lost"].includes(o.stage)
+          );
+          setPipelineCount(active.length);
+        }
       }
       if (subsRes.ok) {
         const subs = await subsRes.json();
@@ -144,11 +209,60 @@ export default function CommandCenterPage() {
       if (taskRes.ok) {
         const data = await taskRes.json();
         if (data?.total_today !== undefined) setTodayTasksSummary(data);
+        if (Array.isArray(data?.today)) setTodayTasksRaw(data.today);
+        if (Array.isArray(data?.overdue)) setOverdueTasksRaw(data.overdue);
       }
     } catch {
       // ignore
     } finally {
       setLoadingOps(false);
+    }
+  }, []);
+
+  const fetchAlerts = useCallback(async () => {
+    setLoadingAlerts(true);
+    try {
+      const res = await fetch("/api/alerts");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) setAlertsRaw(data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingAlerts(false);
+    }
+  }, []);
+
+  const fetchSpine = useCallback(async () => {
+    if (!V2_COMMAND_CENTER) return;
+    setLoadingSpine(true);
+    try {
+      const res = await fetch("/api/spine");
+      if (res.ok) {
+        const data: SpineResponse = await res.json();
+        setSpine(data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingSpine(false);
+    }
+  }, []);
+
+  const fetchReview = useCallback(async () => {
+    if (!V2_COMMAND_CENTER) return;
+    setLoadingReview(true);
+    try {
+      const res = await fetch("/api/review-queue");
+      if (res.ok) {
+        const data: ReviewQueueResponse = await res.json();
+        setReview(data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingReview(false);
     }
   }, []);
 
@@ -159,6 +273,7 @@ export default function CommandCenterPage() {
       if (res.ok) {
         const data = await res.json();
         setOrchestrator(data);
+        setLastSyncAt(new Date());
       }
     } catch {
       // ignore
@@ -173,7 +288,19 @@ export default function CommandCenterPage() {
     fetchActivity();
     runOrchestrator();
     fetchOps();
-  }, [fetchStats, fetchHealth, fetchActivity, runOrchestrator, fetchOps]);
+    fetchSpine();
+    fetchAlerts();
+    fetchReview();
+  }, [
+    fetchStats,
+    fetchHealth,
+    fetchActivity,
+    runOrchestrator,
+    fetchOps,
+    fetchSpine,
+    fetchAlerts,
+    fetchReview,
+  ]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -183,6 +310,9 @@ export default function CommandCenterPage() {
       fetchActivity(),
       fetchStats(),
       fetchOps(),
+      fetchSpine(),
+      fetchAlerts(),
+      fetchReview(),
     ]);
     setRefreshing(false);
   };
@@ -207,95 +337,128 @@ export default function CommandCenterPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
-      <MotionCard className="relative overflow-hidden p-6" delay={0}>
-        <div className="absolute inset-0 bg-gradient-to-r from-red-600/5 via-transparent to-transparent pointer-events-none" />
-        <div className="relative flex items-center justify-between">
-          <div>
-            <motion.h2
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-2xl font-bold text-white tracking-tight"
-            >
-              Welcome Back
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-sm text-[#666] mt-1"
-            >
-              Your AI system is actively optimizing your career
-            </motion.p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <GlowDot color="green" size="sm" />
-              <span className="text-[11px] font-medium uppercase tracking-wider text-emerald-400">System Active</span>
+      {/* Top banner: FocusBar (v2) or Welcome Back (v1) */}
+      {V2_COMMAND_CENTER ? (
+        <>
+          <FocusBar
+            focusArea={orchestrator?.focus_area}
+            confidence={orchestrator?.confidence ?? undefined}
+            lastSyncAt={lastSyncAt}
+            loading={loadingOrchestrator}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+          />
+          <Spine data={spine} loading={loadingSpine} />
+        </>
+      ) : (
+        <MotionCard className="relative overflow-hidden p-6" delay={0}>
+          <div className="absolute inset-0 bg-gradient-to-r from-red-600/5 via-transparent to-transparent pointer-events-none" />
+          <div className="relative flex items-center justify-between">
+            <div>
+              <motion.h2
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-2xl font-bold text-white tracking-tight"
+              >
+                Welcome Back
+              </motion.h2>
+              <motion.p
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-sm text-[#666] mt-1"
+              >
+                Your AI system is actively optimizing your career
+              </motion.p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="border-[#1A1A1A] hover:border-red-500/30 hover:shadow-[0_0_15px_rgba(220,38,38,0.1)]"
-            >
-              {refreshing ? (
-                <Loader2 className="size-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="size-4 mr-2" />
-              )}
-              Refresh
-            </Button>
-          </div>
-        </div>
-      </MotionCard>
-
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => {
-          const Icon = stat.icon;
-          return (
-            <MotionCard key={stat.label} delay={0.1 + i * 0.08} className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium uppercase tracking-wider text-[#666]">
-                  {stat.label}
-                </span>
-                <div className="size-8 rounded-lg bg-red-500/10 flex items-center justify-center">
-                  <Icon className="size-4 text-red-500" />
-                </div>
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <GlowDot color="green" size="sm" />
+                <span className="text-[11px] font-medium uppercase tracking-wider text-emerald-400">System Active</span>
               </div>
-              {stat.value === null ? (
-                <Skeleton className="h-8 w-12" />
-              ) : (
-                <div
-                  className={cn(
-                    "text-3xl font-bold text-white tabular-nums",
-                    stat.color
-                  )}
-                >
-                  <AnimatedNumber value={stat.value} />
-                </div>
-              )}
-            </MotionCard>
-          );
-        })}
-      </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="border-[#1A1A1A] hover:border-red-500/30 hover:shadow-[0_0_15px_rgba(220,38,38,0.1)]"
+              >
+                {refreshing ? (
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="size-4 mr-2" />
+                )}
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </MotionCard>
+      )}
 
-      {/* Main Grid */}
+      {/* Stat Cards (v1 only — the Spine replaces these in v2 per
+          UPGRADE_SPEC Part 8 rule #9: "killing them is the upgrade") */}
+      {!V2_COMMAND_CENTER && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((stat, i) => {
+            const Icon = stat.icon;
+            return (
+              <MotionCard
+                key={stat.label}
+                delay={0.1 + i * 0.08}
+                className="p-5"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium uppercase tracking-wider text-[#666]">
+                    {stat.label}
+                  </span>
+                  <div className="size-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                    <Icon className="size-4 text-red-500" />
+                  </div>
+                </div>
+                {stat.value === null ? (
+                  <Skeleton className="h-8 w-12" />
+                ) : (
+                  <div
+                    className={cn(
+                      "text-3xl font-bold text-white tabular-nums",
+                      stat.color
+                    )}
+                  >
+                    <AnimatedNumber value={stat.value} />
+                  </div>
+                )}
+              </MotionCard>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Main Grid: Next Moves (v2) or PriorityActions (v1) + ActivityFeed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <PriorityActions
-            actions={orchestrator?.priority_actions || []}
-            loading={loadingOrchestrator}
-            healthSummary={orchestrator?.health_summary}
-            focusArea={orchestrator?.focus_area}
-          />
+          {V2_COMMAND_CENTER ? (
+            <NextMoves
+              orchestratorActions={orchestrator?.priority_actions}
+              todayTasks={todayTasksRaw}
+              overdueTasks={overdueTasksRaw}
+              alerts={alertsRaw}
+              loading={
+                loadingOrchestrator || loadingOps || loadingAlerts
+              }
+            />
+          ) : (
+            <PriorityActions
+              actions={orchestrator?.priority_actions || []}
+              loading={loadingOrchestrator}
+              healthSummary={orchestrator?.health_summary}
+              focusArea={orchestrator?.focus_area}
+            />
+          )}
         </motion.div>
 
         <motion.div
@@ -303,7 +466,14 @@ export default function CommandCenterPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5 }}
         >
-          <ActivityFeed logs={activity} loading={loadingActivity} />
+          {V2_COMMAND_CENTER ? (
+            <CurrentRecord
+              song={pickLatestSong(songs)}
+              loading={loadingStats}
+            />
+          ) : (
+            <ActivityFeed logs={activity} loading={loadingActivity} />
+          )}
         </motion.div>
       </div>
 
@@ -314,42 +484,58 @@ export default function CommandCenterPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
         >
-          <HealthWidget health={health} loading={loadingHealth} />
+          {V2_COMMAND_CENTER ? (
+            <HealthReviewPanel
+              health={health}
+              healthLoading={loadingHealth}
+              review={review}
+              reviewLoading={loadingReview}
+            />
+          ) : (
+            <HealthWidget health={health} loading={loadingHealth} />
+          )}
         </motion.div>
 
-        {/* Pipeline Summary */}
+        {/* Pipeline panel: PipelinePulse (v2) or Pipeline Summary (v1) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.65 }}
         >
-          <GlowCard className="p-5 h-full">
-            <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-              <GitBranch className="size-4 text-red-500" />
-              Pipeline Summary
-            </h3>
-            {loadingStats ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-              </div>
-            ) : pipelineCount === 0 ? (
-              <p className="text-sm text-[#666]">
-                No active opportunities. Check the Intelligence page for new leads.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#666]">Active Opportunities</span>
-                  <span className="text-white font-medium tabular-nums">{pipelineCount}</span>
+          {V2_COMMAND_CENTER ? (
+            <PipelinePulse
+              opportunities={opportunities}
+              loading={loadingStats}
+            />
+          ) : (
+            <GlowCard className="p-5 h-full">
+              <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                <GitBranch className="size-4 text-red-500" />
+                Pipeline Summary
+              </h3>
+              {loadingStats ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#666]">Total Submissions</span>
-                  <span className="text-white font-medium tabular-nums">{submissionCount}</span>
+              ) : pipelineCount === 0 ? (
+                <p className="text-sm text-[#666]">
+                  No active opportunities. Check the Intelligence page for new leads.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[#666]">Active Opportunities</span>
+                    <span className="text-white font-medium tabular-nums">{pipelineCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[#666]">Total Submissions</span>
+                    <span className="text-white font-medium tabular-nums">{submissionCount}</span>
+                  </div>
                 </div>
-              </div>
-            )}
-          </GlowCard>
+              )}
+            </GlowCard>
+          )}
         </motion.div>
       </div>
 
@@ -483,6 +669,20 @@ export default function CommandCenterPage() {
           </GlowCard>
         </motion.div>
       </div>
+
+      {/* Ambient bottom: collapsible AI feed (v2 only) */}
+      {V2_COMMAND_CENTER && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.85 }}
+        >
+          <AmbientActivityFeed
+            logs={activity}
+            loading={loadingActivity}
+          />
+        </motion.div>
+      )}
     </div>
   );
 }

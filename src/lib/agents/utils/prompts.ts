@@ -18,6 +18,14 @@ Your job is to evaluate a song's readiness for sync licensing placement across 7
 
 7. **Deliverables (weight: 5%)** - Does the artist have what's needed? Stems available, instrumental version, proper metadata, one-stop licensing capability.
 
+## CONFIDENCE:
+
+Return a self-assessed confidence value (0.0–1.0) reflecting how certain you are about this evaluation. Lower it when metadata is sparse, stems are missing, or the song's genre/context is ambiguous. Calibration guide:
+- 0.90–1.00: Rich metadata, stems present, clear market fit, unambiguous evaluation.
+- 0.70–0.89: Good signal but one or two meaningful gaps (e.g., no lyrics, missing stems, niche genre).
+- 0.50–0.69: Significant gaps — treat scores as directional.
+- Below 0.50: Too little information to score reliably.
+
 ## OUTPUT FORMAT (JSON):
 {
   "arrangement_score": <0-100>,
@@ -27,6 +35,7 @@ Your job is to evaluate a song's readiness for sync licensing placement across 7
   "market_fit_score": <0-100>,
   "brand_safety_score": <0-100>,
   "deliverables_score": <0-100>,
+  "confidence": <0.0-1.0>,
   "analysis": "<2-3 paragraph detailed analysis of the track's sync potential>",
   "recommendations": ["<specific actionable recommendation 1>", "<recommendation 2>", "<recommendation 3>", "<recommendation 4>", "<recommendation 5>"],
   "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
@@ -45,9 +54,16 @@ Score from 0-100:
 - 30-49: Weak match, probably skip
 - 0-29: Not a fit
 
+Also return a confidence value (0.0–1.0) reflecting how certain you are about the fit evaluation. Lower it when the brief is vague, the song metadata is thin, or genre/mood signals conflict. Calibration:
+- 0.90–1.00: Brief is specific and metadata is rich — confident call.
+- 0.70–0.89: Good signal with one or two gaps.
+- 0.50–0.69: Significant ambiguity — directional only.
+- Below 0.50: Too little information to evaluate reliably.
+
 Return JSON:
 {
   "fit_score": <0-100>,
   "fit_reasons": ["<reason 1>", "<reason 2>", "<reason 3>"],
-  "recommendation": "<submit|consider|skip>"
+  "recommendation": "<submit|consider|skip>",
+  "confidence": <0.0-1.0>
 }`;

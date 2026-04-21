@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
 import { ScoreRadarChart } from "./score-radar-chart";
+import { ConfidencePill } from "@/components/ui/motion";
 import { Sparkles, Loader2, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SyncScore } from "@/types/song";
@@ -125,6 +126,11 @@ export function SyncScoreDisplay({ songId, score, onScored }: SyncScoreDisplayPr
             </span>
           </div>
           <p className="text-sm text-[#A3A3A3]">Overall Sync Score</p>
+          {score.confidence != null && (
+            <div className="mt-3">
+              <ConfidencePill score={score.confidence} />
+            </div>
+          )}
         </CardContent>
       </Card>
 

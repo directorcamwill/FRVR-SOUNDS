@@ -41,6 +41,8 @@ export async function runSyncEngine(input: SyncEngineInput) {
       parsed.deliverables_score * 0.05
   );
 
+  const confidence = clampConfidence(parsed.confidence);
+
   return {
     overall_score: overall,
     arrangement_score: parsed.arrangement_score,
@@ -50,6 +52,7 @@ export async function runSyncEngine(input: SyncEngineInput) {
     market_fit_score: parsed.market_fit_score,
     brand_safety_score: parsed.brand_safety_score,
     deliverables_score: parsed.deliverables_score,
+    confidence,
     ai_analysis: parsed.analysis,
     ai_recommendations: parsed.recommendations || [],
     strengths: parsed.strengths || [],
@@ -58,6 +61,14 @@ export async function runSyncEngine(input: SyncEngineInput) {
     tokensUsed: response.tokensUsed,
     durationMs: Date.now() - startTime,
   };
+}
+
+function clampConfidence(raw: unknown): number | null {
+  const n = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(n)) return null;
+  if (n < 0) return 0;
+  if (n > 1) return 1;
+  return n;
 }
 
 function buildUserMessage(input: SyncEngineInput): string {

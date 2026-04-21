@@ -50,6 +50,13 @@ export async function PATCH(
     "structure",
     "reference_tracks",
     "checklist",
+    "writing_ideas",
+    "producer_ideas",
+    "metaphors",
+    "brand_connection",
+    "project_mode",
+    "placement_intent",
+    "album_context",
   ];
   for (const [k, v] of Object.entries(body)) {
     if (allowed.includes(k)) updateFields[k] = v;

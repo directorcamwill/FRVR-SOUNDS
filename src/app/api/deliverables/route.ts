@@ -63,12 +63,31 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const summary = searchParams.get("summary");
+  const songId = searchParams.get("song_id");
+
+  // If filtering by song_id, skip the default-bootstrap behavior —
+  // artifacts-for-a-song is a different semantic axis than category goals.
+  if (songId) {
+    const { data: artifacts, error: artifactsError } = await supabase
+      .from("deliverables")
+      .select("*")
+      .eq("artist_id", artist.id)
+      .eq("song_id", songId)
+      .order("created_at", { ascending: true });
+    if (artifactsError)
+      return NextResponse.json(
+        { error: artifactsError.message },
+        { status: 500 }
+      );
+    return NextResponse.json(artifacts ?? []);
+  }
 
   // Check for existing deliverables
   let { data: deliverables, error } = await supabase
     .from("deliverables")
     .select("*")
     .eq("artist_id", artist.id)
+    .is("song_id", null) // only category-level goals, not per-song artifacts
     .order("created_at", { ascending: true });
 
   if (error)
@@ -133,6 +152,40 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No artist profile" }, { status: 404 });
 
   const body = await request.json();
+
+  // Artifact-typed row (tied to a specific song + audio artifact)
+  if (body.song_id && body.artifact_type) {
+    const { data: artifact, error: artifactError } = await supabase
+      .from("deliverables")
+      .insert({
+        artist_id: artist.id,
+        song_id: body.song_id,
+        artifact_type: body.artifact_type,
+        category: body.category || "music_production",
+        title: body.title || body.artifact_type,
+        description: body.description || null,
+        target_count: 1,
+        current_count: body.file_key || body.file_url ? 1 : 0,
+        status:
+          body.file_key || body.file_url ? "completed" : "in_progress",
+        priority: body.priority || "high",
+        lufs_target: body.lufs_target ?? null,
+        true_peak_target: body.true_peak_target ?? null,
+        qc_passed: body.qc_passed ?? false,
+        file_key: body.file_key || body.file_url || null,
+      })
+      .select()
+      .single();
+
+    if (artifactError)
+      return NextResponse.json(
+        { error: artifactError.message },
+        { status: 500 }
+      );
+    return NextResponse.json(artifact);
+  }
+
+  // Legacy category-goal deliverable
   const { data: deliverable, error } = await supabase
     .from("deliverables")
     .insert({

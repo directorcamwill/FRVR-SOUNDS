@@ -65,6 +65,7 @@ export async function POST(
         market_fit_score: result.market_fit_score,
         brand_safety_score: result.brand_safety_score,
         deliverables_score: result.deliverables_score,
+        confidence: result.confidence,
         ai_analysis: result.ai_analysis,
         ai_recommendations: result.ai_recommendations,
       })

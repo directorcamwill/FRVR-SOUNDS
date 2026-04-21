@@ -20,7 +20,15 @@ export async function GET(
     .select(
       `
       *,
-      song:songs(id, title, sync_scores(overall_score))
+      song:songs(
+        id,
+        title,
+        duration_seconds,
+        status,
+        song_metadata(*),
+        stems(*),
+        sync_scores(*)
+      )
     `
     )
     .eq("opportunity_id", opportunityId)
@@ -104,6 +112,7 @@ export async function POST(
       const parsed = JSON.parse(response.content);
       const fitScore = Math.min(100, Math.max(0, parsed.fit_score || 0));
       const fitReasons = parsed.fit_reasons || [];
+      const confidence = clampConfidence(parsed.confidence);
 
       const { data: match, error: matchError } = await supabase
         .from("opportunity_matches")
@@ -112,13 +121,22 @@ export async function POST(
           song_id: song.id,
           fit_score: fitScore,
           fit_reasons: fitReasons,
+          confidence,
           status: "suggested",
           matched_by: "ai",
         })
         .select(
           `
           *,
-          song:songs(id, title, sync_scores(overall_score))
+          song:songs(
+        id,
+        title,
+        duration_seconds,
+        status,
+        song_metadata(*),
+        stems(*),
+        sync_scores(*)
+      )
         `
         )
         .single();
@@ -150,6 +168,14 @@ function buildBriefText(opportunity: Record<string, unknown>): string {
   if (opportunity.budget_range) text += `Budget: ${opportunity.budget_range}\n`;
   if (opportunity.exclusive) text += `Exclusive: Yes\n`;
   return text;
+}
+
+function clampConfidence(raw: unknown): number | null {
+  const n = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(n)) return null;
+  if (n < 0) return 0;
+  if (n > 1) return 1;
+  return n;
 }
 
 function buildSongText(
