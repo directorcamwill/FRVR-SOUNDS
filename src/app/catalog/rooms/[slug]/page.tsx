@@ -42,13 +42,9 @@ export default function RoomPage({
   const [loading, setLoading] = useState(true);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  });
-  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.9], [1, 0]);
+  const { scrollY } = useScroll();
+  const heroY = useTransform(scrollY, [0, 700], ["0%", "35%"]);
+  const heroOpacity = useTransform(scrollY, [0, 600], [1, 0]);
 
   useEffect(() => {
     (async () => {
@@ -117,10 +113,7 @@ export default function RoomPage({
   return (
     <>
       {/* HERO */}
-      <section
-        ref={heroRef}
-        className="relative h-screen min-h-[700px] overflow-hidden flex items-center"
-      >
+      <section className="relative h-screen min-h-[700px] overflow-hidden flex items-center">
         <motion.div
           style={{ y: heroY, opacity: heroOpacity }}
           className="absolute inset-0"
