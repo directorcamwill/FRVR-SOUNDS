@@ -4,8 +4,9 @@ import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, BookmarkPlus, Check, Pause, Play } from "lucide-react";
+import { ArrowLeft, BookmarkPlus, Check, Lock, Pause, Play } from "lucide-react";
 import { toast } from "sonner";
+import { VisitorGateModal, useVisitorUnlock } from "@/components/catalog/visitor-gate";
 
 interface RoomRef {
   slug: string;
@@ -29,6 +30,16 @@ interface Song {
   rooms: RoomRef[];
 }
 
+interface SimilarSong {
+  id: string;
+  song_title: string;
+  artist_name: string;
+  genre: string | null;
+  bpm: number | null;
+  key: string | null;
+  is_one_stop: boolean | null;
+}
+
 export default function SongDetailPage({
   params,
 }: {
@@ -37,6 +48,7 @@ export default function SongDetailPage({
   const router = useRouter();
   const { id } = use(params);
   const [song, setSong] = useState<Song | null>(null);
+  const [similar, setSimilar] = useState<SimilarSong[]>([]);
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -46,6 +58,7 @@ export default function SongDetailPage({
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
   const [openCreate, setOpenCreate] = useState(false);
+  const gate = useVisitorUnlock();
 
   useEffect(() => {
     const raw = typeof window !== "undefined" ? localStorage.getItem("frvr.shortlist") : null;
@@ -109,6 +122,7 @@ export default function SongDetailPage({
         if (!r.ok) throw new Error("not found");
         const data = await r.json();
         setSong(data.song);
+        setSimilar(data.similar ?? []);
       } catch {
         // handled below by !song
       } finally {
@@ -133,6 +147,10 @@ export default function SongDetailPage({
   const toggle = () => {
     const audio = audioRef.current;
     if (!audio) return;
+    if (!gate.unlocked) {
+      gate.promptUnlock();
+      return;
+    }
     if (playing) {
       audio.pause();
     } else {
@@ -260,10 +278,12 @@ export default function SongDetailPage({
               disabled={!song.signed_audio_url}
               className="shrink-0 size-16 rounded-full flex items-center justify-center transition-all hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ background: accent, boxShadow: `0 8px 30px -4px ${accent}88` }}
-              aria-label={playing ? "Pause" : "Play"}
+              aria-label={playing ? "Pause" : gate.unlocked ? "Play" : "Unlock playback"}
             >
               {playing ? (
                 <Pause className="size-5 text-white" fill="white" />
+              ) : !gate.unlocked && song.signed_audio_url ? (
+                <Lock className="size-5 text-white" />
               ) : (
                 <Play className="size-5 text-white translate-x-0.5" fill="white" />
               )}
@@ -415,6 +435,58 @@ export default function SongDetailPage({
           </motion.div>
         )}
 
+        {similar.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 1.2 }}
+            className="mt-16 pt-10 border-t border-white/5"
+          >
+            <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 mb-5">
+              In the same rooms
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              {similar.map((s) => (
+                <Link
+                  key={s.id}
+                  href={`/catalog/song/${s.id}`}
+                  className="group border-b border-white/5 py-4 hover:bg-white/[0.02] transition-colors flex items-center gap-4"
+                >
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-display text-base md:text-lg font-medium text-white truncate">
+                      {s.song_title}
+                    </h4>
+                    <p className="text-xs text-white/50 mt-0.5 truncate">
+                      {s.artist_name}
+                      {s.genre && (
+                        <>
+                          <span className="mx-2 text-white/20">·</span>
+                          <span>{s.genre}</span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <div className="hidden md:flex items-center gap-2 text-[10px] uppercase tracking-[0.25em] text-white/40 shrink-0">
+                    {s.bpm && <span className="tabular-nums">{s.bpm}</span>}
+                    {s.key && (
+                      <>
+                        <span className="opacity-40">·</span>
+                        <span>{s.key}</span>
+                      </>
+                    )}
+                    {s.is_one_stop && (
+                      <>
+                        <span className="opacity-40">·</span>
+                        <span style={{ color: accent }}>1-Stop</span>
+                      </>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -426,6 +498,8 @@ export default function SongDetailPage({
           </p>
         </motion.div>
       </div>
+
+      <VisitorGateModal open={gate.open} onClose={gate.dismiss} onSubmit={gate.submit} />
     </div>
   );
 }

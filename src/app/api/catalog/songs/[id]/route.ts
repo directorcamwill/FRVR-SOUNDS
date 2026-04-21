@@ -31,7 +31,7 @@ export async function GET(
 
   const { data: rooms } = await admin
     .from("library_room_songs")
-    .select("library_rooms(slug, name, accent_color)")
+    .select("room_id, library_rooms(slug, name, accent_color)")
     .eq("deal_id", id);
 
   const inRooms =
@@ -39,7 +39,31 @@ export async function GET(
       .flatMap((r) => (r as { library_rooms: unknown }).library_rooms)
       .filter(Boolean) as Array<{ slug: string; name: string; accent_color: string | null }>;
 
+  // Similar tracks — other songs in the same rooms, max 6, excluding this deal.
+  const roomIds = (rooms ?? []).map((r) => (r as { room_id: string }).room_id);
+  let similar: unknown[] = [];
+  if (roomIds.length > 0) {
+    const { data: otherAssignments } = await admin
+      .from("library_room_songs")
+      .select("deal_id")
+      .in("room_id", roomIds)
+      .neq("deal_id", id)
+      .limit(30);
+    const otherIds = Array.from(
+      new Set((otherAssignments ?? []).map((o) => o.deal_id)),
+    ).slice(0, 6);
+    if (otherIds.length > 0) {
+      const { data: others } = await admin
+        .from("library_deals")
+        .select("id, song_title, artist_name, genre, bpm, key, is_one_stop")
+        .in("id", otherIds)
+        .eq("status", "active");
+      similar = others ?? [];
+    }
+  }
+
   return NextResponse.json({
     song: { ...deal, signed_audio_url, rooms: inRooms },
+    similar,
   });
 }
