@@ -127,6 +127,7 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState<Submission | null>(null);
   const [pitching, setPitching] = useState<Deal | null>(null);
+  const [assigningRooms, setAssigningRooms] = useState<Deal | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -221,6 +222,7 @@ export default function LibraryPage() {
             deals={deals}
             loading={loading}
             onPitch={setPitching}
+            onAssignRooms={setAssigningRooms}
           />
         </TabsContent>
         <TabsContent value="pitches" className="mt-4">
@@ -245,6 +247,11 @@ export default function LibraryPage() {
           setPitching(null);
           refresh();
         }}
+      />
+
+      <RoomAssignmentDialog
+        deal={assigningRooms}
+        onClose={() => setAssigningRooms(null)}
       />
     </div>
   );
@@ -356,10 +363,12 @@ function CatalogTab({
   deals,
   loading,
   onPitch,
+  onAssignRooms,
 }: {
   deals: Deal[];
   loading: boolean;
   onPitch: (d: Deal) => void;
+  onAssignRooms: (d: Deal) => void;
 }) {
   if (loading) return <Skeleton className="h-32" />;
   if (deals.length === 0) {
@@ -427,14 +436,22 @@ function CatalogTab({
               {(d.library_pitches?.length ?? 0) === 1 ? "" : "es"} sent
             </div>
 
-            <Button
-              size="sm"
-              className="w-full"
-              onClick={() => onPitch(d)}
-            >
-              <Send className="size-3.5 mr-1.5" />
-              Pitch this song
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onAssignRooms(d)}
+              >
+                Rooms
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => onPitch(d)}
+              >
+                <Send className="size-3.5 mr-1.5" />
+                Pitch
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ))}
@@ -954,6 +971,127 @@ function PitchComposerDialog({
             Create{" "}
             {selectedSupervisors.size + selectedTargets.size || ""} pitch
             {selectedSupervisors.size + selectedTargets.size === 1 ? "" : "es"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RoomAssignmentDialog({
+  deal,
+  onClose,
+}: {
+  deal: Deal | null;
+  onClose: () => void;
+}) {
+  const [rooms, setRooms] = useState<
+    Array<{ id: string; name: string; tagline: string | null; accent_color: string | null; slug: string }>
+  >([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!deal) return;
+    setLoading(true);
+    Promise.all([
+      fetch("/api/catalog/rooms").then((r) => r.json()),
+      fetch(`/api/library/deals/${deal.id}/rooms`).then((r) => r.json()),
+    ])
+      .then(([allRooms, dealRooms]) => {
+        setRooms(allRooms.rooms ?? []);
+        setSelected(new Set((dealRooms.room_ids ?? []) as string[]));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [deal]);
+
+  if (!deal) return null;
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/library/deals/${deal.id}/rooms`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room_ids: Array.from(selected) }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      toast.success(
+        `Assigned to ${selected.size} room${selected.size === 1 ? "" : "s"}`,
+      );
+      onClose();
+    } catch {
+      toast.error("Could not save room assignments");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!deal} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Assign to Northwoods Rooms</DialogTitle>
+          <DialogDescription>
+            {deal.song_title} — {deal.artist_name}. Pick the rooms this song
+            belongs in. Catalog visitors will see it in each selected room.
+          </DialogDescription>
+        </DialogHeader>
+
+        {loading ? (
+          <Skeleton className="h-64" />
+        ) : (
+          <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1">
+            {rooms.map((r) => {
+              const isSel = selected.has(r.id);
+              const accent = r.accent_color ?? "#DC2626";
+              return (
+                <label
+                  key={r.id}
+                  className="flex items-start gap-3 rounded border border-[#1A1A1A] bg-[#0B0B0B] p-3 cursor-pointer hover:border-[#DC2626]/40 transition-colors"
+                  style={isSel ? { borderColor: `${accent}66`, background: `${accent}11` } : undefined}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSel}
+                    onChange={() => toggle(r.id)}
+                    className="mt-1 size-4 accent-[#DC2626] shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-white">{r.name}</p>
+                    {r.tagline && (
+                      <p className="text-[11px] text-[#A3A3A3] mt-0.5 italic">
+                        {r.tagline}
+                      </p>
+                    )}
+                  </div>
+                  <span
+                    className="size-2 rounded-full shrink-0 mt-2"
+                    style={{ background: accent, boxShadow: `0 0 10px ${accent}` }}
+                  />
+                </label>
+              );
+            })}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button size="sm" variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={save} disabled={saving || loading}>
+            Save {selected.size} {selected.size === 1 ? "room" : "rooms"}
           </Button>
         </DialogFooter>
       </DialogContent>

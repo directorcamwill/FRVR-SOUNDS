@@ -3,7 +3,7 @@
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowLeft, ArrowRight, Pause, Play } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink, Pause, Play } from "lucide-react";
 
 interface Song {
   id: string;
@@ -366,7 +366,11 @@ function TrackRow({
           )}
         </button>
 
-        <div className="flex-1 min-w-0">
+        <Link
+          href={`/catalog/song/${song.id}`}
+          className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
           <h3 className="font-display text-2xl md:text-3xl font-medium text-white truncate">
             {song.song_title}
           </h3>
@@ -379,7 +383,7 @@ function TrackRow({
               </>
             )}
           </p>
-        </div>
+        </Link>
 
         <div className="hidden md:flex items-center gap-3 text-[10px] uppercase tracking-[0.25em] text-white/40 shrink-0">
           {song.bpm && <span className="tabular-nums">{song.bpm} BPM</span>}
@@ -395,6 +399,14 @@ function TrackRow({
               <span style={{ color: accent }}>One-Stop</span>
             </>
           )}
+          <Link
+            href={`/catalog/song/${song.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="ml-2 text-white/40 hover:text-white transition-colors"
+            aria-label="Open track detail"
+          >
+            <ExternalLink className="size-3.5" />
+          </Link>
         </div>
       </div>
 
