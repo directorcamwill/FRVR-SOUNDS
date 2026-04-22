@@ -110,8 +110,53 @@ export function brandContextToPrompt(ctx: BrandContext): string {
   const lines: string[] = [
     `Artist: ${ctx.artistName ?? "(unnamed)"}`,
     w.niche ? `Niche: ${w.niche}` : "",
+    w.category_lane ? `Lane: ${w.category_lane}` : "",
+    w.positioning_statement ? `Positioning: ${w.positioning_statement}` : "",
     w.elevator_pitch ? `Pitch: ${w.elevator_pitch}` : "",
+    w.core_pain ? `Core pain resolved: ${w.core_pain}` : "",
+    w.transformation_before && w.transformation_after
+      ? `Transformation: ${w.transformation_before} → ${w.transformation_after}`
+      : "",
+    w.key_themes?.length ? `Key themes: ${w.key_themes.join(", ")}` : "",
+    w.core_beliefs?.length ? `Core beliefs: ${w.core_beliefs.join(" · ")}` : "",
+    w.differentiators?.length
+      ? `Differentiators: ${w.differentiators.join(" · ")}`
+      : "",
+    w.what_not?.length
+      ? `What they're NOT: ${w.what_not
+          .map((x) => `not ${x.confused_with} (${x.difference})`)
+          .join(" · ")}`
+      : "",
+    w.competitive_contrast?.length
+      ? `Comp contrast: ${w.competitive_contrast
+          .map((x) => `vs ${x.artist} — ${x.difference}`)
+          .join(" · ")}`
+      : "",
     w.primary_audience ? `Primary audience: ${w.primary_audience}` : "",
+    w.audience_desires?.length
+      ? `Audience desires: ${w.audience_desires.join(", ")}`
+      : "",
+    w.audience_pain_points?.length
+      ? `Audience pain: ${w.audience_pain_points.join(", ")}`
+      : "",
+    w.audience_lifestyle_context?.length
+      ? `Audience context: ${w.audience_lifestyle_context.join(" · ")}`
+      : "",
+    w.audience_identity_goals
+      ? `Audience identity goals: ${w.audience_identity_goals}`
+      : "",
+    w.desired_emotions?.length
+      ? `Desired emotions: ${w.desired_emotions.join(", ")}`
+      : "",
+    w.natural_emotions?.length
+      ? `Natural emotions: ${w.natural_emotions.join(", ")}`
+      : "",
+    w.emotional_tags?.length
+      ? `Emotional tags: ${w.emotional_tags.join(", ")}`
+      : "",
+    w.energy_marker != null || w.intensity_marker != null
+      ? `Energy/intensity: ${w.energy_marker ?? "—"}/${w.intensity_marker ?? "—"} (1–10)${w.intensity_notes ? ` — ${w.intensity_notes}` : ""}`
+      : "",
     w.tone_descriptors?.length ? `Tone: ${w.tone_descriptors.join(", ")}` : "",
     w.voice_dos?.length ? `Voice DOs: ${w.voice_dos.join(" · ")}` : "",
     w.voice_donts?.length ? `Voice DON'Ts: ${w.voice_donts.join(" · ")}` : "",
@@ -145,6 +190,9 @@ export function brandContextToPrompt(ctx: BrandContext): string {
       : "",
     w.sync_library_targets?.length
       ? `Target libraries: ${w.sync_library_targets.join(", ")}`
+      : "",
+    w.journey_notes && w.journey_notes.trim()
+      ? `Artist's own notes: ${w.journey_notes.slice(0, 600)}`
       : "",
   ];
 

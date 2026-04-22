@@ -28,29 +28,75 @@ export type SyncFormatTarget =
   | "podcast"
   | "library";
 
+// Brand Journey modules (migration 00025). Artists progress through these
+// in the Brand tab; each module writes to a slice of brand_wiki.
+export type BrandModuleId =
+  | "identity"
+  | "emotional"
+  | "positioning"
+  | "audience"
+  | "visual"
+  | "sonic"
+  | "routes";
+
+export interface WhatNotItem {
+  confused_with: string;
+  difference: string;
+}
+
+export interface CompetitiveContrastItem {
+  artist: string;
+  difference: string;
+}
+
 export interface BrandWiki {
   artist_id: string;
 
-  // Identity
+  // ─── Identity ───
   niche: string | null;
   elevator_pitch: string | null;
   origin_story: string | null;
   bio_short: string | null;
   bio_medium: string | null;
   bio_long: string | null;
+  // Added by 00025 — Identity module deep layer
+  core_pain: string | null;
+  transformation_before: string | null;
+  transformation_after: string | null;
+  core_beliefs: string[];
+  key_themes: string[];
 
-  // Audience
+  // ─── Audience ───
   primary_audience: string | null;
   secondary_audience: string | null;
   audience_pain_points: string[];
+  // Added by 00025
+  audience_desires: string[];
+  audience_lifestyle_context: string[];
+  audience_identity_goals: string | null;
 
-  // Tone
+  // ─── Tone ───
   tone_descriptors: string[];
   voice_dos: string[];
   voice_donts: string[];
   core_messaging: string | null;
 
-  // Visual
+  // ─── Emotional Signature (00025) ───
+  desired_emotions: string[];
+  natural_emotions: string[];
+  emotional_tags: string[];
+  energy_marker: number | null;
+  intensity_marker: number | null;
+  intensity_notes: string | null;
+
+  // ─── Positioning (00025) ───
+  positioning_statement: string | null;
+  differentiators: string[];
+  category_lane: string | null;
+  what_not: WhatNotItem[];
+  competitive_contrast: CompetitiveContrastItem[];
+
+  // ─── Visual ───
   color_primary: string | null;
   color_secondary: string | null;
   color_accent: string | null;
@@ -61,7 +107,7 @@ export interface BrandWiki {
   icon_url: string | null;
   press_photo_urls: string[];
 
-  // Sonic
+  // ─── Sonic ───
   sonic_genre_primary: string | null;
   sonic_genre_secondary: string | null;
   sonic_moods: string[];
@@ -71,15 +117,31 @@ export interface BrandWiki {
   sonic_texture_keywords: string[];
   reference_tracks: ReferenceTrack[];
 
-  // Mix prefs
+  // ─── Mix prefs ───
   mix_preferences: MixPreferences;
 
-  // Sync positioning
+  // ─── Sync positioning ───
   sync_format_targets: SyncFormatTarget[];
   sync_library_targets: string[];
   avoid_sync_formats: SyncFormatTarget[];
 
-  // Meta
+  // ─── Journey state (00025) ───
+  current_module_id: BrandModuleId | null;
+  current_step_id: string | null;
+  module_locked_at: Record<string, string | null>;
+  module_completeness: Record<string, number>;
+
+  // ─── Collective journey notes (00026) ───
+  // Freeform running scratchpad attached to the whole Brand Journey —
+  // thoughts that don't fit inside a single question.
+  journey_notes: string | null;
+
+  // ─── Activation milestone (00027) ───
+  // Set once, the first time all 7 modules cross 80%. Used to gate the
+  // celebratory toast + unlock the 3D Constellation view.
+  journey_activated_at: string | null;
+
+  // ─── Meta ───
   completeness_pct: number;
   last_guided_at: string | null;
   created_at: string;
@@ -88,6 +150,8 @@ export interface BrandWiki {
 
 export type BrandFocus =
   | "identity"
+  | "emotional"
+  | "positioning"
   | "audience"
   | "tone"
   | "visual"

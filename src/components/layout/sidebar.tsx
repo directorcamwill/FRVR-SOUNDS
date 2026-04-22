@@ -35,9 +35,6 @@ import type { FeatureKey, PlanId } from "@/lib/plans";
 import { PLANS, planHasFeature } from "@/lib/plans";
 import { UpgradeDialog } from "@/components/ui/feature-gate";
 
-const BRAND_WIKI_ENABLED =
-  process.env.NEXT_PUBLIC_BRAND_WIKI === "true";
-
 // `feature` optional — when set, item is locked unless the user's plan
 // includes that feature key. No key = always unlocked for paying accounts.
 interface NavItem {
@@ -49,9 +46,7 @@ interface NavItem {
 
 const coreItems: NavItem[] = [
   { label: "Command Center", href: "/command-center", icon: LayoutDashboard },
-  ...(BRAND_WIKI_ENABLED
-    ? [{ label: "Brand", href: "/brand", icon: Palette, feature: "brand_wiki_edit" as FeatureKey }]
-    : []),
+  { label: "Brand", href: "/brand", icon: Palette, feature: "brand_wiki_edit" },
   { label: "Song Vault", href: "/vault", icon: Music, feature: "song_vault" },
   { label: "Pipeline", href: "/pipeline", icon: GitBranch, feature: "pipeline_tracking" },
   { label: "Submissions", href: "/submissions", icon: Send, feature: "pipeline_tracking" },

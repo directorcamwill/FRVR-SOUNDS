@@ -56,19 +56,44 @@ export async function GET() {
 
 // Fields we accept via PUT. Everything else silently dropped — keeps schema clean.
 const WRITABLE_FIELDS: Array<keyof BrandWiki> = [
+  // Identity
   "niche",
   "elevator_pitch",
   "origin_story",
   "bio_short",
   "bio_medium",
   "bio_long",
+  "core_pain",
+  "transformation_before",
+  "transformation_after",
+  "core_beliefs",
+  "key_themes",
+  // Audience
   "primary_audience",
   "secondary_audience",
   "audience_pain_points",
+  "audience_desires",
+  "audience_lifestyle_context",
+  "audience_identity_goals",
+  // Tone
   "tone_descriptors",
   "voice_dos",
   "voice_donts",
   "core_messaging",
+  // Emotional Signature
+  "desired_emotions",
+  "natural_emotions",
+  "emotional_tags",
+  "energy_marker",
+  "intensity_marker",
+  "intensity_notes",
+  // Positioning
+  "positioning_statement",
+  "differentiators",
+  "category_lane",
+  "what_not",
+  "competitive_contrast",
+  // Visual
   "color_primary",
   "color_secondary",
   "color_accent",
@@ -78,6 +103,7 @@ const WRITABLE_FIELDS: Array<keyof BrandWiki> = [
   "logo_url",
   "icon_url",
   "press_photo_urls",
+  // Sonic
   "sonic_genre_primary",
   "sonic_genre_secondary",
   "sonic_moods",
@@ -86,10 +112,18 @@ const WRITABLE_FIELDS: Array<keyof BrandWiki> = [
   "sonic_key_preferences",
   "sonic_texture_keywords",
   "reference_tracks",
+  // Mix
   "mix_preferences",
+  // Sync
   "sync_format_targets",
   "sync_library_targets",
   "avoid_sync_formats",
+  // Journey state
+  "current_module_id",
+  "current_step_id",
+  "module_locked_at",
+  "module_completeness",
+  "journey_notes",
 ];
 
 export async function PUT(request: Request) {

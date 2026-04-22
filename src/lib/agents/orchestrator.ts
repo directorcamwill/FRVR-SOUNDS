@@ -13,6 +13,7 @@ export async function runOrchestrator(artistId: string) {
     { data: submissions },
     { data: recentLogs },
     { data: alerts },
+    { data: wiki },
   ] = await Promise.all([
     supabase.from("artists").select("*").eq("id", artistId).single(),
     supabase
@@ -41,6 +42,13 @@ export async function runOrchestrator(artistId: string) {
       .eq("artist_id", artistId)
       .eq("read", false)
       .limit(5),
+    supabase
+      .from("brand_wiki")
+      .select(
+        "completeness_pct, current_module_id, current_step_id, module_completeness"
+      )
+      .eq("artist_id", artistId)
+      .maybeSingle(),
   ]);
 
   // Build context summary
@@ -70,7 +78,7 @@ export async function runOrchestrator(artistId: string) {
 
   const systemPrompt = `You are the AI orchestrator for FRVR SOUNDS, an artist command center for sync licensing. Your job is to analyze the artist's current state and recommend the 3-5 most impactful actions they should take RIGHT NOW.
 
-Prioritize actions that directly lead to income: completing sync-ready tracks, submitting to opportunities, fixing metadata gaps.
+Prioritize actions that directly lead to income: completing sync-ready tracks, submitting to opportunities, fixing metadata gaps. If the Brand Journey is started but incomplete (current_module_id set, module_completeness < 80% on the current module), include a "Resume Brand Journey" action pointing to /brand — downstream agents (Content Director, Songwriter, Producer) get materially sharper once those modules are finished.
 
 Each action must include a self-assessed confidence (0.0–1.0) reflecting how certain you are the action is correctly prioritized given the data. Lower it when signals are sparse or conflicting. Also return a top-level confidence for the overall recommendation set.
 - 0.90–1.00: Strong signal, clear next step, low ambiguity.
@@ -115,6 +123,12 @@ Genres: ${artist?.genres?.join(", ") || "Not set"}
 ${recentLogs?.map((l) => `- ${l.agent_type}: ${l.summary}`).join("\n") || "No recent activity"}
 
 ## UNREAD ALERTS: ${alerts?.length || 0}
+
+## BRAND JOURNEY:
+- Overall completeness: ${wiki?.completeness_pct ?? 0}%
+- Current module: ${wiki?.current_module_id ?? "not started"}
+- Current step: ${wiki?.current_step_id ?? "—"}
+- Per-module completeness: ${JSON.stringify(wiki?.module_completeness ?? {})}
 
 What are the top priority actions for this artist right now?`;
 

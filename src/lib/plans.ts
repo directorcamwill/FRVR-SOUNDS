@@ -34,7 +34,8 @@ export type FeatureKey =
   | "money_llc"
   | "priority_library_submission"
   | "monthly_strategy_call"
-  | "early_access";
+  | "early_access"
+  | "brand_wiki_activated";
 
 export interface PlanDefinition {
   id: PlanId;
@@ -82,6 +83,7 @@ const STUDIO_FEATURES: FeatureKey[] = [
   "priority_library_submission",
   "monthly_strategy_call",
   "early_access",
+  "brand_wiki_activated",
 ];
 
 export const PLANS: Record<PlanId, PlanDefinition> = {

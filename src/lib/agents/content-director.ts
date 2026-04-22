@@ -228,8 +228,23 @@ function buildUserMessage(i: UserMessageInputs): string {
     `# ARTIST BRAND SNAPSHOT`,
     `Artist: ${i.artistName}`,
     i.wiki.niche ? `Niche: ${i.wiki.niche}` : "",
+    i.wiki.category_lane ? `Lane: ${i.wiki.category_lane}` : "",
+    i.wiki.positioning_statement
+      ? `Positioning: ${i.wiki.positioning_statement}`
+      : "",
     i.wiki.elevator_pitch ? `Pitch: ${i.wiki.elevator_pitch}` : "",
+    i.wiki.core_pain ? `Core pain resolved: ${i.wiki.core_pain}` : "",
+    i.wiki.key_themes?.length ? `Themes: ${i.wiki.key_themes.join(", ")}` : "",
+    i.wiki.differentiators?.length
+      ? `Differentiators: ${i.wiki.differentiators.join(" · ")}`
+      : "",
     i.wiki.primary_audience ? `Primary audience: ${i.wiki.primary_audience}` : "",
+    i.wiki.audience_desires?.length
+      ? `Audience desires: ${i.wiki.audience_desires.join(", ")}`
+      : "",
+    i.wiki.audience_identity_goals
+      ? `Audience identity goals: ${i.wiki.audience_identity_goals}`
+      : "",
     i.wiki.tone_descriptors?.length
       ? `Tone: ${i.wiki.tone_descriptors.join(", ")}`
       : "",
@@ -240,6 +255,12 @@ function buildUserMessage(i: UserMessageInputs): string {
       ? `Voice DON'Ts: ${i.wiki.voice_donts.join(" · ")}`
       : "",
     i.wiki.core_messaging ? `Core messaging: ${i.wiki.core_messaging}` : "",
+    i.wiki.desired_emotions?.length
+      ? `Desired emotions: ${i.wiki.desired_emotions.join(", ")}`
+      : "",
+    i.wiki.emotional_tags?.length
+      ? `Emotional tags: ${i.wiki.emotional_tags.join(", ")}`
+      : "",
     i.wiki.sonic_genre_primary
       ? `Sonic: ${i.wiki.sonic_genre_primary}${i.wiki.sonic_genre_secondary ? ` / ${i.wiki.sonic_genre_secondary}` : ""}`
       : "",
