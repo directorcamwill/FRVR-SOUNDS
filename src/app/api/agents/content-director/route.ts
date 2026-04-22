@@ -6,6 +6,8 @@ import {
   type ContentMomentType,
   type ContentPlatform,
 } from "@/lib/agents/content-director";
+import { gateAgentRun } from "@/lib/feature-guard";
+import { incrementAgentRunCounter } from "@/lib/features";
 
 /**
  * POST /api/agents/content-director
@@ -23,6 +25,12 @@ import {
  */
 
 export async function POST(request: Request) {
+  const gate = await gateAgentRun("ai_content_director");
+  if (!gate.ok) return gate.response;
+  const artistId = gate.access.artist_id;
+  if (!artistId)
+    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -30,13 +38,7 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: artist } = await supabase
-    .from("artists")
-    .select("id")
-    .eq("profile_id", user.id)
-    .single();
-  if (!artist)
-    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
+  const artist = { id: artistId };
 
   const body = await request.json().catch(() => ({}));
   const momentType = body?.moment_type as ContentMomentType | undefined;
@@ -126,6 +128,8 @@ export async function POST(request: Request) {
         action_url: "/content",
       });
     }
+
+    await incrementAgentRunCounter(artist.id);
 
     return NextResponse.json({
       gated: false,

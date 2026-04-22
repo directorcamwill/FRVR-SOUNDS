@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { runSyncEngine } from "@/lib/agents/sync-engine";
+import { gateAgentQuota } from "@/lib/feature-guard";
+import { incrementAgentRunCounter } from "@/lib/features";
 
 export async function GET(
   request: Request,
@@ -24,6 +26,12 @@ export async function POST(
   { params }: { params: Promise<{ songId: string }> }
 ) {
   const { songId } = await params;
+  const gate = await gateAgentQuota();
+  if (!gate.ok) return gate.response;
+  const gatedArtistId = gate.access.artist_id;
+  if (!gatedArtistId)
+    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -97,6 +105,8 @@ export async function POST(
         duration_ms: result.durationMs,
       });
     }
+
+    await incrementAgentRunCounter(gatedArtistId);
 
     return NextResponse.json(score);
   } catch (err: unknown) {

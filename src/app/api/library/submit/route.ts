@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { runAudioAnalysis } from "@/lib/audio/run-analysis";
 
 // Public endpoint — no auth. Creates a library submission row after the
 // artist has uploaded their file to the signed URL path.
@@ -72,6 +73,20 @@ export async function POST(request: Request) {
 
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (submission.song_file_path) {
+    after(async () => {
+      try {
+        await runAudioAnalysis({
+          admin,
+          filePath: submission.song_file_path!,
+          submissionId: data.id,
+        });
+      } catch (e) {
+        console.error("[audio-analysis] submission", data.id, e);
+      }
+    });
+  }
 
   return NextResponse.json({ id: data.id });
 }

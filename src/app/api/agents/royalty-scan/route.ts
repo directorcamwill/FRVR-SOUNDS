@@ -1,25 +1,18 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { runRoyaltyScan } from "@/lib/agents/royalty-scanner";
+import { gateAgentQuota } from "@/lib/feature-guard";
+import { incrementAgentRunCounter } from "@/lib/features";
 
 export async function POST() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { data: artist } = await supabase
-    .from("artists")
-    .select("id")
-    .eq("profile_id", user.id)
-    .single();
-  if (!artist)
+  const gate = await gateAgentQuota();
+  if (!gate.ok) return gate.response;
+  const artistId = gate.access.artist_id;
+  if (!artistId)
     return NextResponse.json({ error: "No artist profile" }, { status: 404 });
 
   try {
-    const result = await runRoyaltyScan(artist.id);
+    const result = await runRoyaltyScan(artistId);
+    await incrementAgentRunCounter(artistId);
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Scan failed";

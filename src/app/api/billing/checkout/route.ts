@@ -47,6 +47,10 @@ export async function POST(request: Request) {
     customer_email: sub?.stripe_customer_id ? undefined : user.email,
     client_reference_id: artist.id,
     metadata: { artist_id: artist.id, plan_id: plan },
+    subscription_data: {
+      trial_period_days: 7,
+      metadata: { artist_id: artist.id, plan_id: plan },
+    },
     success_url: `${origin}/command-center?billing=success`,
     cancel_url: `${origin}/pricing?billing=cancelled`,
   });

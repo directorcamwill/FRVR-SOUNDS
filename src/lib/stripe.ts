@@ -14,7 +14,7 @@ export function getStripe(): Stripe {
       "STRIPE_SECRET_KEY missing in .env.local — add it before using billing endpoints.",
     );
   }
-  client = new Stripe(key, { apiVersion: "2025-09-30.clover" });
+  client = new Stripe(key, { apiVersion: "2026-03-25.dahlia" });
   return client;
 }
 

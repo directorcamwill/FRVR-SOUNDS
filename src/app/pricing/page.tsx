@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles } from "lucide-react";
-import { PLANS, visiblePricingPlans } from "@/lib/plans";
+import { toast } from "sonner";
+import { PLANS, visiblePricingPlans, type PlanId } from "@/lib/plans";
 
 const FEATURE_SUMMARIES: Record<string, string[]> = {
   starter: [
@@ -29,7 +32,7 @@ const FEATURE_SUMMARIES: Record<string, string[]> = {
     "100 AI agent runs / month",
   ],
   studio: [
-    "Everything in Pro",
+    "Everything in Pro Catalog",
     "Unlimited AI agent runs",
     "Metaphor Hub",
     "Money / LLC setup tools",
@@ -41,6 +44,41 @@ const FEATURE_SUMMARIES: Record<string, string[]> = {
 
 export default function PricingPage() {
   const plans = visiblePricingPlans();
+  const router = useRouter();
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState<PlanId | null>(null);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((j) => {
+        setSignedIn(!!j?.authenticated);
+        setCurrentPlan(j?.plan_id ?? null);
+      })
+      .catch(() => setSignedIn(false));
+  }, []);
+
+  async function handleStart(planId: PlanId) {
+    if (!signedIn) {
+      router.push(`/signup?plan=${planId}`);
+      return;
+    }
+    setSubmitting(planId);
+    try {
+      const r = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planId }),
+      });
+      const j = await r.json();
+      if (!r.ok || !j?.url) throw new Error(j?.error ?? "Checkout failed");
+      window.location.href = j.url;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Checkout failed");
+      setSubmitting(null);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-black py-12">
@@ -62,8 +100,9 @@ export default function PricingPage() {
           </h1>
           <p className="text-sm text-[#A3A3A3] max-w-2xl mx-auto leading-relaxed">
             Every plan includes the Sync Directory, Placements reference, and
-            Supervisor directory. AI agents and matching tools unlock on Pro.
-            Unlimited runs + library priority on Studio.
+            Supervisor directory. AI agents and matching tools unlock on Pro
+            Catalog. Unlimited runs + library priority on Sync Prepared.
+            7-day free trial on every tier.
           </p>
         </div>
 
@@ -111,15 +150,33 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href={`/signup?plan=${p.id}`}>
+                {signedIn === null ? (
+                  <Button className="w-full" variant="outline" disabled>
+                    Loading…
+                  </Button>
+                ) : currentPlan === "internal" ? (
+                  <Button className="w-full" variant="outline" disabled>
+                    You have internal access
+                  </Button>
+                ) : signedIn && currentPlan === p.id ? (
+                  <Button className="w-full" variant="outline" disabled>
+                    Current plan
+                  </Button>
+                ) : (
                   <Button
                     className="w-full"
                     variant={p.highlight ? "default" : "outline"}
+                    disabled={submitting !== null}
+                    onClick={() => handleStart(p.id as PlanId)}
                   >
                     <Sparkles className="size-3.5 mr-1.5" />
-                    Start with {p.name}
+                    {submitting === p.id
+                      ? "Opening checkout…"
+                      : signedIn
+                        ? `Upgrade to ${p.name}`
+                        : `Start with ${p.name}`}
                   </Button>
-                </Link>
+                )}
                 <p className="text-[10px] text-[#555] text-center">
                   {PLANS[p.id].agent_run_quota === null
                     ? "Unlimited AI runs"

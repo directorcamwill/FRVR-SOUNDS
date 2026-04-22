@@ -39,6 +39,7 @@ export function FeatureGate({
   if (mode === "hidden") return null;
 
   const minPlan = minPlanForFeature(feature);
+  const lockedDuringTrial = access.is_trialing;
 
   return (
     <>
@@ -55,16 +56,18 @@ export function FeatureGate({
               {label ?? "Feature locked"}
             </p>
             <p className="text-xs text-[#A3A3A3]">
-              {minPlan
-                ? `Unlock on the ${minPlan.name} plan ($${minPlan.priceMonthly}/mo)`
-                : "Upgrade to unlock"}
+              {lockedDuringTrial
+                ? "Unlocks when your trial converts to paid"
+                : minPlan
+                  ? `Unlock on the ${minPlan.name} plan ($${minPlan.priceMonthly}/mo)`
+                  : "Upgrade to unlock"}
             </p>
           </div>
           <Badge
             variant="outline"
             className="text-[10px] bg-[#DC2626]/10 text-[#DC2626] border-[#DC2626]/30"
           >
-            Upgrade
+            {lockedDuringTrial ? "Until paid" : "Upgrade"}
           </Badge>
         </div>
       </button>
@@ -73,6 +76,7 @@ export function FeatureGate({
         onClose={() => setOpen(false)}
         feature={feature}
         label={label}
+        trialing={lockedDuringTrial}
       />
     </>
   );
@@ -83,11 +87,13 @@ export function UpgradeDialog({
   onClose,
   feature,
   label,
+  trialing = false,
 }: {
   open: boolean;
   onClose: () => void;
   feature: FeatureKey;
   label?: string;
+  trialing?: boolean;
 }) {
   const minPlan = minPlanForFeature(feature);
   return (
@@ -96,13 +102,17 @@ export function UpgradeDialog({
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Sparkles className="size-4 text-[#DC2626]" />
-            <DialogTitle>Upgrade to unlock</DialogTitle>
+            <DialogTitle>
+              {trialing ? "Unlocks when your trial converts" : "Upgrade to unlock"}
+            </DialogTitle>
           </div>
           <DialogDescription>
             {label ?? "This feature"}{" "}
-            {minPlan
-              ? `is included in the ${minPlan.name} plan ($${minPlan.priceMonthly}/mo) and above.`
-              : "is not available on your current plan."}
+            {trialing
+              ? `is a paid feature. Your 7-day trial gives you Starter-level access; adding a payment method activates ${minPlan?.name ?? "your plan"}.`
+              : minPlan
+                ? `is included in the ${minPlan.name} plan ($${minPlan.priceMonthly}/mo) and above.`
+                : "is not available on your current plan."}
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-lg border border-[#DC2626]/30 bg-[#DC2626]/5 p-4 space-y-2">
@@ -122,7 +132,7 @@ export function UpgradeDialog({
             Maybe later
           </Button>
           <Link href="/pricing">
-            <Button size="sm">See plans</Button>
+            <Button size="sm">{trialing ? "Activate plan" : "See plans"}</Button>
           </Link>
         </DialogFooter>
       </DialogContent>

@@ -7,11 +7,21 @@ import { motion } from "framer-motion";
 import { ArrowLeft, BookmarkPlus, Check, Lock, Pause, Play } from "lucide-react";
 import { toast } from "sonner";
 import { VisitorGateModal, useVisitorUnlock } from "@/components/catalog/visitor-gate";
+import { Waveform } from "@/components/catalog/waveform";
 
 interface RoomRef {
   slug: string;
   name: string;
   accent_color: string | null;
+}
+
+interface Analysis {
+  waveform_peaks: number[] | null;
+  duration_sec: number | null;
+  lufs_integrated: number | null;
+  true_peak_db: number | null;
+  dynamic_range: number | null;
+  analyzer_version: string | null;
 }
 
 interface Song {
@@ -28,6 +38,7 @@ interface Song {
   signed_audio_url: string | null;
   deal_type: string;
   rooms: RoomRef[];
+  analysis: Analysis | null;
 }
 
 interface SimilarSong {
@@ -292,27 +303,37 @@ export default function SongDetailPage({
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-white/40 mb-2 tabular-nums">
                 <span>{fmt(currentTime)}</span>
-                <span>{fmt(duration)}</span>
+                <span>{fmt(duration || song.analysis?.duration_sec || 0)}</span>
               </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const pct = (e.clientX - rect.left) / rect.width;
-                  seek(Math.max(0, Math.min(1, pct)));
-                }}
-                className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden cursor-pointer"
-                aria-label="Scrub"
-              >
-                <div
-                  className="h-full rounded-full transition-[width] duration-100"
-                  style={{
-                    width: `${progressPct * 100}%`,
-                    background: accent,
-                    boxShadow: `0 0 10px ${accent}`,
-                  }}
+              {song.analysis?.waveform_peaks && song.analysis.waveform_peaks.length > 0 ? (
+                <Waveform
+                  peaks={song.analysis.waveform_peaks}
+                  progress={progressPct}
+                  accent={accent}
+                  onSeek={seek}
+                  height={56}
                 />
-              </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const pct = (e.clientX - rect.left) / rect.width;
+                    seek(Math.max(0, Math.min(1, pct)));
+                  }}
+                  className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden cursor-pointer"
+                  aria-label="Scrub"
+                >
+                  <div
+                    className="h-full rounded-full transition-[width] duration-100"
+                    style={{
+                      width: `${progressPct * 100}%`,
+                      background: accent,
+                      boxShadow: `0 0 10px ${accent}`,
+                    }}
+                  />
+                </button>
+              )}
             </div>
           </div>
 
@@ -382,6 +403,32 @@ export default function SongDetailPage({
             accent={song.is_one_stop ? accent : undefined}
           />
         </motion.div>
+
+        {song.analysis?.lufs_integrated !== null && song.analysis?.lufs_integrated !== undefined && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.95 }}
+            className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4"
+          >
+            <MetaTile
+              label="LUFS"
+              value={song.analysis.lufs_integrated.toFixed(1)}
+            />
+            {song.analysis.true_peak_db !== null && (
+              <MetaTile
+                label="True Peak"
+                value={`${song.analysis.true_peak_db.toFixed(1)} dB`}
+              />
+            )}
+            {song.analysis.dynamic_range !== null && (
+              <MetaTile
+                label="LRA"
+                value={`${song.analysis.dynamic_range.toFixed(1)} LU`}
+              />
+            )}
+          </motion.div>
+        )}
 
         {song.moods && song.moods.length > 0 && (
           <motion.div

@@ -2,8 +2,16 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { runSyncBrief } from "@/lib/agents/sync-brief";
+import { gateAgentQuota } from "@/lib/feature-guard";
+import { incrementAgentRunCounter } from "@/lib/features";
 
 export async function POST(request: Request) {
+  const gate = await gateAgentQuota();
+  if (!gate.ok) return gate.response;
+  const artistId = gate.access.artist_id;
+  if (!artistId)
+    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -11,13 +19,7 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: artist } = await supabase
-    .from("artists")
-    .select("id")
-    .eq("profile_id", user.id)
-    .single();
-  if (!artist)
-    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
+  const artist = { id: artistId };
 
   const body = await request.json();
   const { opportunityId } = body;
@@ -88,6 +90,8 @@ export async function POST(request: Request) {
         action_url: `/pipeline/${opportunityId}`,
       });
     }
+
+    await incrementAgentRunCounter(artist.id);
 
     return NextResponse.json({ brief, tokensUsed, durationMs });
   } catch (err: unknown) {

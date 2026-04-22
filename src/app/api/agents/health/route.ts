@@ -1,25 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { runHealthMonitor } from "@/lib/agents/health-monitor";
+import { gateAgentQuota } from "@/lib/feature-guard";
+import { incrementAgentRunCounter } from "@/lib/features";
 
 export async function POST() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { data: artist } = await supabase
-    .from("artists")
-    .select("id")
-    .eq("profile_id", user.id)
-    .single();
-  if (!artist)
+  const gate = await gateAgentQuota();
+  if (!gate.ok) return gate.response;
+  const artistId = gate.access.artist_id;
+  if (!artistId)
     return NextResponse.json({ error: "No artist profile" }, { status: 404 });
 
   try {
-    const result = await runHealthMonitor(artist.id);
+    const result = await runHealthMonitor(artistId);
+    await incrementAgentRunCounter(artistId);
     return NextResponse.json(result);
   } catch (err: unknown) {
     const message =

@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useSong } from "@/lib/hooks/use-songs";
 import { MetadataForm } from "@/components/vault/metadata-form";
@@ -15,11 +15,12 @@ import { SupervisorMatchesPanel } from "@/components/vault/supervisor-matches-pa
 import { GuidedRecsPanel } from "@/components/vault/guided-recs-panel";
 import { TrackAnalysisHeader } from "@/components/vault/track-analysis-header";
 import { StemsManager } from "@/components/vault/stems-manager";
+import { LibrarySubmitDialog } from "@/components/library/submit-dialog";
 import type { GuidedRecsOutput } from "@/lib/agents/guided-recs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Send } from "lucide-react";
 import type { SyncScore } from "@/types/song";
 
 export default function SongDetailPage({
@@ -29,6 +30,7 @@ export default function SongDetailPage({
 }) {
   const { songId } = use(params);
   const { song, loading, refetch } = useSong(songId);
+  const [submitOpen, setSubmitOpen] = useState(false);
 
   if (loading) {
     return (
@@ -64,22 +66,48 @@ export default function SongDetailPage({
 
   const stems = song.stems || [];
 
+  const metadata = Array.isArray(song.song_metadata)
+    ? song.song_metadata[0]
+    : song.song_metadata;
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <Link href="/vault">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="size-4" />
           </Button>
         </Link>
-        <div>
+        <div className="flex-1 min-w-0">
           <h2 className="text-2xl font-bold text-white">{song.title}</h2>
           <p className="text-sm text-[#A3A3A3] capitalize">{song.status}</p>
         </div>
+        <Button
+          variant="outline"
+          onClick={() => setSubmitOpen(true)}
+          className="border-[#DC2626]/40 text-white hover:bg-[#DC2626]/10"
+        >
+          <Send className="size-3.5 mr-1.5" />
+          Submit this song to Library
+        </Button>
       </div>
 
       <TrackAnalysisHeader song={song} />
+
+      <LibrarySubmitDialog
+        open={submitOpen}
+        onOpenChange={setSubmitOpen}
+        prefill={{
+          song_title: song.title,
+          genre: metadata?.genre ?? undefined,
+          sub_genre: metadata?.sub_genre ?? undefined,
+          moods: metadata?.moods ?? undefined,
+          bpm: metadata?.bpm ?? undefined,
+          key: metadata?.key ?? undefined,
+          vocal_type: metadata?.vocal_gender ?? undefined,
+        }}
+      />
 
       {/* Audio Player */}
       {song.file_url && (

@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { callLLM } from "@/lib/agents/utils/llm";
+import { gateAgentQuota } from "@/lib/feature-guard";
+import { incrementAgentRunCounter } from "@/lib/features";
 
 const SYSTEM_PROMPT = `You are the FRVR SOUNDS AI Assistant — a knowledgeable music industry expert embedded in an artist command center platform. You help artists with everything: music business, sync licensing, songwriting, production, marketing, legal questions, career strategy, and using the platform.
 
@@ -20,6 +22,12 @@ Context: The artist is currently on the "{context_page}" page of the platform.
 Keep responses concise but helpful. If they ask about a platform feature, guide them to the right page.`;
 
 export async function POST(request: Request) {
+  const gate = await gateAgentQuota();
+  if (!gate.ok) return gate.response;
+  const artistId = gate.access.artist_id;
+  if (!artistId)
+    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,13 +35,7 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: artist } = await supabase
-    .from("artists")
-    .select("id")
-    .eq("profile_id", user.id)
-    .single();
-  if (!artist)
-    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
+  const artist = { id: artistId };
 
   const body = await request.json();
   const { message, context_page, conversation_id } = body;
@@ -101,6 +103,8 @@ export async function POST(request: Request) {
         .single();
       convId = newConv?.id;
     }
+
+    await incrementAgentRunCounter(artist.id);
 
     return NextResponse.json({
       response: response.content,

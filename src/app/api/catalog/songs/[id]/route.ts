@@ -29,6 +29,16 @@ export async function GET(
     signed_audio_url = signed?.signedUrl ?? null;
   }
 
+  const { data: analysisRow } = await admin
+    .from("audio_analysis")
+    .select(
+      "waveform_peaks, duration_sec, lufs_integrated, true_peak_db, dynamic_range, analyzer_version",
+    )
+    .eq("deal_id", id)
+    .order("analyzed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const { data: rooms } = await admin
     .from("library_room_songs")
     .select("room_id, library_rooms(slug, name, accent_color)")
@@ -63,7 +73,7 @@ export async function GET(
   }
 
   return NextResponse.json({
-    song: { ...deal, signed_audio_url, rooms: inRooms },
+    song: { ...deal, signed_audio_url, rooms: inRooms, analysis: analysisRow ?? null },
     similar,
   });
 }

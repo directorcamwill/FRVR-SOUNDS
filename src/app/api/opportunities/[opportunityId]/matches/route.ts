@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { callLLM } from "@/lib/agents/utils/llm";
 import { OPPORTUNITY_MATCH_PROMPT } from "@/lib/agents/utils/prompts";
+import { gateAgentQuota } from "@/lib/feature-guard";
+import { incrementAgentRunCounter } from "@/lib/features";
 
 export async function GET(
   request: Request,
@@ -44,6 +46,12 @@ export async function POST(
   { params }: { params: Promise<{ opportunityId: string }> }
 ) {
   const { opportunityId } = await params;
+  const gate = await gateAgentQuota();
+  if (!gate.ok) return gate.response;
+  const artistId = gate.access.artist_id;
+  if (!artistId)
+    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -51,13 +59,7 @@ export async function POST(
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: artist } = await supabase
-    .from("artists")
-    .select("id")
-    .eq("profile_id", user.id)
-    .single();
-  if (!artist)
-    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
+  const artist = { id: artistId };
 
   // Get the opportunity
   const { data: opportunity, error: oppError } = await supabase
@@ -152,6 +154,10 @@ export async function POST(
 
   // Sort by fit_score descending
   matches.sort((a, b) => b.fit_score - a.fit_score);
+
+  // One increment per opportunity matching batch (even though internally we
+  // call callLLM once per song — this scores the UX-level "run" once).
+  await incrementAgentRunCounter(artistId);
 
   return NextResponse.json(matches);
 }

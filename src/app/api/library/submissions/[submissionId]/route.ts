@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { runAudioAnalysis } from "@/lib/audio/run-analysis";
 
 export async function GET(
   _request: Request,
@@ -106,7 +107,25 @@ export async function PATCH(
       vocal_type: submission.vocal_type,
       is_one_stop: submission.is_one_stop,
     };
-    await admin.from("library_deals").insert(dealRow);
+    const { data: createdDeal } = await admin
+      .from("library_deals")
+      .insert(dealRow)
+      .select("id")
+      .single();
+
+    if (createdDeal?.id && submission.song_file_path) {
+      after(async () => {
+        try {
+          await runAudioAnalysis({
+            admin,
+            filePath: submission.song_file_path,
+            dealId: createdDeal.id,
+          });
+        } catch (e) {
+          console.error("[audio-analysis] deal", createdDeal.id, e);
+        }
+      });
+    }
   }
 
   return NextResponse.json({ submission });

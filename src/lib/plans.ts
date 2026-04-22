@@ -98,8 +98,8 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   },
   pro: {
     id: "pro",
-    name: "Pro",
-    tagline: "Full AI guidance + matching. Pitch-ready.",
+    name: "Pro Catalog",
+    tagline: "Full AI guidance + matching. Your catalog, pitch-ready.",
     priceMonthly: 199,
     features: PRO_FEATURES,
     agent_run_quota: 100,
@@ -110,8 +110,8 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   },
   studio: {
     id: "studio",
-    name: "Studio",
-    tagline: "White-glove catalog operator. Unlimited agents, priority library intake, direct strategy calls.",
+    name: "Sync Prepared",
+    tagline: "Catalog is Pro + every track sync-prepared. Unlimited agents, priority library intake, direct strategy calls.",
     priceMonthly: 499,
     features: STUDIO_FEATURES,
     agent_run_quota: null,

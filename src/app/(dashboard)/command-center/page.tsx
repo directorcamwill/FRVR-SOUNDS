@@ -22,6 +22,7 @@ import type { Opportunity } from "@/types/opportunity";
 import type { Song } from "@/types/song";
 import { MotionCard, AnimatedNumber, GlowDot, GlowCard } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
+import { SubmitToLibraryCard } from "@/components/library/submit-to-library-card";
 
 const V2_COMMAND_CENTER =
   process.env.NEXT_PUBLIC_V2_COMMAND_CENTER === "true";
@@ -433,6 +434,15 @@ export default function CommandCenterPage() {
           })}
         </div>
       )}
+
+      {/* Submit to Library promo — required, non-dismissible */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.35 }}
+      >
+        <SubmitToLibraryCard />
+      </motion.div>
 
       {/* Main Grid: Next Moves (v2) or PriorityActions (v1) + ActivityFeed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

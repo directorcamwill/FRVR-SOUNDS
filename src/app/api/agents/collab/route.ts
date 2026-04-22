@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { runCollab } from "@/lib/agents/collab";
-import { gateFeature } from "@/lib/feature-guard";
+import { gateAgentRun } from "@/lib/feature-guard";
+import { incrementAgentRunCounter } from "@/lib/features";
 
 /**
  * POST /api/agents/collab
@@ -16,8 +17,11 @@ import { gateFeature } from "@/lib/feature-guard";
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
-  const gate = await gateFeature("ai_collab");
-  if (gate) return gate;
+  const gate = await gateAgentRun("ai_collab");
+  if (!gate.ok) return gate.response;
+  const artistId = gate.access.artist_id;
+  if (!artistId)
+    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
 
   const supabase = await createClient();
   const {
@@ -26,13 +30,7 @@ export async function POST(request: Request) {
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: artist } = await supabase
-    .from("artists")
-    .select("id")
-    .eq("profile_id", user.id)
-    .single();
-  if (!artist)
-    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
+  const artist = { id: artistId };
 
   const body = await request.json().catch(() => ({}));
   const projectId: string | undefined = body?.project_id;
@@ -83,6 +81,8 @@ export async function POST(request: Request) {
       tokens_used: result.tokensUsed,
       duration_ms: result.durationMs,
     });
+
+    await incrementAgentRunCounter(artist.id);
 
     return NextResponse.json({
       gated: false,

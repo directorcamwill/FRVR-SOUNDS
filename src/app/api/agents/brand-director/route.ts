@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { runBrandDirector } from "@/lib/agents/brand-director";
 import type { BrandFocus } from "@/types/brand";
+import { gateAgentRun } from "@/lib/feature-guard";
+import { incrementAgentRunCounter } from "@/lib/features";
 
 /**
  * POST /api/agents/brand-director
@@ -15,6 +17,12 @@ import type { BrandFocus } from "@/types/brand";
  */
 
 export async function POST(request: Request) {
+  const gate = await gateAgentRun("ai_brand_director");
+  if (!gate.ok) return gate.response;
+  const artistId = gate.access.artist_id;
+  if (!artistId)
+    return NextResponse.json({ error: "No artist profile" }, { status: 404 });
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -25,7 +33,7 @@ export async function POST(request: Request) {
   const { data: artist } = await supabase
     .from("artists")
     .select("id, artist_name")
-    .eq("profile_id", user.id)
+    .eq("id", artistId)
     .single();
   if (!artist)
     return NextResponse.json({ error: "No artist profile" }, { status: 404 });
@@ -102,6 +110,8 @@ export async function POST(request: Request) {
         action_url: "/brand",
       });
     }
+
+    await incrementAgentRunCounter(artist.id);
 
     return NextResponse.json({ guidance, tokensUsed, durationMs });
   } catch (err: unknown) {
