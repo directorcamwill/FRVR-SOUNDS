@@ -32,7 +32,7 @@ export async function GET(
   const { data: analysisRow } = await admin
     .from("audio_analysis")
     .select(
-      "waveform_peaks, duration_sec, lufs_integrated, true_peak_db, dynamic_range, analyzer_version",
+      "waveform_peaks, duration_sec, lufs_integrated, true_peak_db, dynamic_range, detected_bpm, detected_bpm_confidence, detected_key, detected_key_confidence, analyzer_version",
     )
     .eq("deal_id", id)
     .order("analyzed_at", { ascending: false })

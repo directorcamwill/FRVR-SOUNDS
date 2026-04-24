@@ -23,6 +23,8 @@ import {
   Globe,
 } from "lucide-react";
 import { WikiGlobeModal } from "./wiki-globe-modal";
+import { RewardToolModal } from "./reward-tool-modal";
+import type { RewardTool } from "@/lib/agents/reward-tools";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { BrandModuleId, BrandWiki } from "@/types/brand";
@@ -44,7 +46,8 @@ interface ToolCard {
   title: string;
   subtitle: string;
   href?: string;         // destination route
-  action?: "generate_bios"; // special inline action
+  action?: "generate_bios" | "open_reward"; // special inline action
+  rewardTool?: RewardTool;  // set when action === "open_reward"
   status?: "live" | "soon";
 }
 
@@ -105,28 +108,33 @@ const LIVE_TOOLS: ToolCard[] = [
     href: "/supervisors",
     status: "live",
   },
-];
-
-const SOON_TOOLS: ToolCard[] = [
   {
     icon: Hash,
     title: "Social media profile builder",
     subtitle: "Handle, bio, link-in-bio, and pinned-post copy — all on-brand.",
-    status: "soon",
+    action: "open_reward",
+    rewardTool: "social",
+    status: "live",
   },
   {
     icon: ImageIcon,
     title: "Photo art direction",
     subtitle: "Press-photo shot lists + mood boards pulled from your Visual DNA.",
-    status: "soon",
+    action: "open_reward",
+    rewardTool: "photos",
+    status: "live",
   },
   {
     icon: Store,
     title: "Products + offers",
     subtitle: "Services, merch, ticketing — priced and positioned for your Audience.",
-    status: "soon",
+    action: "open_reward",
+    rewardTool: "offers",
+    status: "live",
   },
 ];
+
+const SOON_TOOLS: ToolCard[] = [];
 
 export function BrandWikiRewards({
   wiki,
@@ -149,6 +157,7 @@ export function BrandWikiRewards({
     auto_wrote?: boolean;
   }>(null);
   const [globeOpen, setGlobeOpen] = useState(false);
+  const [activeReward, setActiveReward] = useState<RewardTool | null>(null);
   const { access, loading: accessLoading } = useMyAccess();
 
   const wikiRecord = wiki as unknown as Record<string, unknown>;
@@ -299,22 +308,39 @@ export function BrandWikiRewards({
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {LIVE_TOOLS.filter((t) => t.action !== "generate_bios").map((t) => (
-              <ToolCardRow key={t.title} tool={t} />
+              <ToolCardRow
+                key={t.title}
+                tool={t}
+                onClick={
+                  t.action === "open_reward" && t.rewardTool
+                    ? () => setActiveReward(t.rewardTool!)
+                    : undefined
+                }
+              />
             ))}
           </div>
         </div>
 
-        {/* Coming soon */}
-        <div className="space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/30">
-            Later chapters unlock
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {SOON_TOOLS.map((t) => (
-              <ToolCardRow key={t.title} tool={t} />
-            ))}
+        {SOON_TOOLS.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/30">
+              Later chapters unlock
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {SOON_TOOLS.map((t) => (
+                <ToolCardRow key={t.title} tool={t} />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {activeReward && (
+          <RewardToolModal
+            tool={activeReward}
+            open={!!activeReward}
+            onOpenChange={(v) => !v && setActiveReward(null)}
+          />
+        )}
 
         {/* Module receipts */}
         <div className="pt-3 border-t border-white/5">
@@ -418,7 +444,13 @@ function LockedToolRow({ tool }: { tool: ToolCard }) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────
 
-function ToolCardRow({ tool }: { tool: ToolCard }) {
+function ToolCardRow({
+  tool,
+  onClick,
+}: {
+  tool: ToolCard;
+  onClick?: () => void;
+}) {
   const Icon = tool.icon;
   const isSoon = tool.status === "soon";
   const inner = (
@@ -476,6 +508,17 @@ function ToolCardRow({ tool }: { tool: ToolCard }) {
   );
   if (tool.href && !isSoon) {
     return <Link href={tool.href}>{inner}</Link>;
+  }
+  if (onClick && !isSoon) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="text-left w-full"
+      >
+        {inner}
+      </button>
+    );
   }
   return inner;
 }

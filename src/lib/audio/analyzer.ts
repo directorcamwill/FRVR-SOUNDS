@@ -3,12 +3,14 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import ffmpegPath from "ffmpeg-static";
+import { detectBpm, detectKey } from "./bpm-key";
 
-export const ANALYZER_VERSION = "v1-ebur128";
+export const ANALYZER_VERSION = "v2-bpm-key";
 
 const FFMPEG = (ffmpegPath as unknown as string) || "ffmpeg";
 const WAVEFORM_BINS = 500;
 const WAVEFORM_SAMPLE_RATE = 8000;
+const DSP_SAMPLE_RATE = 22050;
 
 export interface AnalyzerResult {
   duration_sec: number | null;
@@ -17,6 +19,10 @@ export interface AnalyzerResult {
   true_peak_db: number | null;
   dynamic_range: number | null;
   waveform_peaks: number[];
+  detected_bpm: number | null;
+  detected_bpm_confidence: number | null;
+  detected_key: string | null;
+  detected_key_confidence: number | null;
   analyzer_version: string;
 }
 
@@ -27,10 +33,13 @@ export async function analyzeAudio(input: Buffer, extension = "mp3"): Promise<An
 
   try {
     await writeFile(inputPath, input);
-    const [loudness, peaks] = await Promise.all([
+    const [loudness, peaks, pcm] = await Promise.all([
       runLoudness(inputPath),
       renderWaveform(inputPath),
+      decodeFloatPcm(inputPath, DSP_SAMPLE_RATE),
     ]);
+    const bpm = detectBpm(pcm, DSP_SAMPLE_RATE);
+    const key = detectKey(pcm, DSP_SAMPLE_RATE);
     return {
       duration_sec: loudness.duration_sec,
       lufs_integrated: loudness.lufs_integrated,
@@ -38,11 +47,42 @@ export async function analyzeAudio(input: Buffer, extension = "mp3"): Promise<An
       true_peak_db: loudness.true_peak_db,
       dynamic_range: loudness.dynamic_range,
       waveform_peaks: peaks,
+      detected_bpm: bpm.bpm,
+      detected_bpm_confidence: bpm.confidence,
+      detected_key: key.key,
+      detected_key_confidence: key.confidence,
       analyzer_version: ANALYZER_VERSION,
     };
   } finally {
     await rm(workdir, { recursive: true, force: true });
   }
+}
+
+async function decodeFloatPcm(
+  inputPath: string,
+  sampleRate: number,
+): Promise<Float32Array> {
+  const raw = await runFfmpegRaw([
+    "-nostdin",
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-i",
+    inputPath,
+    "-ac",
+    "1",
+    "-ar",
+    String(sampleRate),
+    "-f",
+    "f32le",
+    "-",
+  ]);
+  const sampleCount = Math.floor(raw.length / 4);
+  const out = new Float32Array(sampleCount);
+  for (let i = 0; i < sampleCount; i++) {
+    out[i] = raw.readFloatLE(i * 4);
+  }
+  return out;
 }
 
 interface LoudnessMeasurements {

@@ -8,6 +8,7 @@ import { SyncScoreDisplay } from "@/components/vault/sync-score-display";
 import { SyncReadinessMeter } from "@/components/vault/sync-readiness-meter";
 import { ArtifactGrid } from "@/components/vault/artifact-grid";
 import { PackageBuilderPanel } from "@/components/vault/package-builder-panel";
+import { ContentSyncLoopPanel } from "@/components/vault/content-sync-loop-panel";
 import { BrandFitPanel } from "@/components/vault/brand-fit-panel";
 import { PlacementMatchesPanel } from "@/components/vault/placement-matches-panel";
 import { PatternInsightsPanel } from "@/components/vault/pattern-insights-panel";
@@ -147,6 +148,10 @@ export default function SongDetailPage({
             initialStatus={song.package_status ?? null}
             initialCheckedAt={song.package_checked_at ?? null}
           />
+          <ContentSyncLoopPanel
+            songId={song.id}
+            packageStatus={song.package_status ?? null}
+          />
           <SyncScoreDisplay
             songId={song.id}
             score={latestScore}
@@ -190,6 +195,10 @@ export default function SongDetailPage({
               songId={song.id}
               initialStatus={song.package_status ?? null}
               initialCheckedAt={song.package_checked_at ?? null}
+            />
+            <ContentSyncLoopPanel
+              songId={song.id}
+              packageStatus={song.package_status ?? null}
             />
             <SyncScoreDisplay
               songId={song.id}

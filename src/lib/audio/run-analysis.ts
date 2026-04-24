@@ -56,6 +56,10 @@ export async function runAudioAnalysis({
     true_peak_db: result.true_peak_db,
     dynamic_range: result.dynamic_range,
     waveform_peaks: result.waveform_peaks,
+    detected_bpm: result.detected_bpm,
+    detected_bpm_confidence: result.detected_bpm_confidence,
+    detected_key: result.detected_key,
+    detected_key_confidence: result.detected_key_confidence,
     analyzer_version: ANALYZER_VERSION,
   });
   if (insertErr) return { ok: false, error: insertErr.message };

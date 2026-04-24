@@ -21,6 +21,10 @@ interface Analysis {
   lufs_integrated: number | null;
   true_peak_db: number | null;
   dynamic_range: number | null;
+  detected_bpm: number | null;
+  detected_bpm_confidence: number | null;
+  detected_key: string | null;
+  detected_key_confidence: number | null;
   analyzer_version: string | null;
 }
 
@@ -394,8 +398,26 @@ export default function SongDetailPage({
           transition={{ duration: 1, delay: 0.9 }}
           className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4"
         >
-          <MetaTile label="BPM" value={song.bpm ? String(song.bpm) : "—"} />
-          <MetaTile label="Key" value={song.key ?? "—"} />
+          <MetaTile
+            label="BPM"
+            value={
+              song.bpm
+                ? String(song.bpm)
+                : song.analysis?.detected_bpm
+                  ? String(Math.round(song.analysis.detected_bpm))
+                  : "—"
+            }
+            hint={
+              !song.bpm && song.analysis?.detected_bpm ? "detected" : undefined
+            }
+          />
+          <MetaTile
+            label="Key"
+            value={song.key ?? song.analysis?.detected_key ?? "—"}
+            hint={
+              !song.key && song.analysis?.detected_key ? "detected" : undefined
+            }
+          />
           <MetaTile label="Vocal" value={song.vocal_type ?? "—"} />
           <MetaTile
             label="License"
@@ -555,10 +577,12 @@ function MetaTile({
   label,
   value,
   accent,
+  hint,
 }: {
   label: string;
   value: string;
   accent?: string;
+  hint?: string;
 }) {
   return (
     <div className="rounded-lg border border-white/10 bg-black/40 p-4">
@@ -571,6 +595,11 @@ function MetaTile({
       >
         {value}
       </p>
+      {hint && (
+        <p className="mt-0.5 text-[9px] uppercase tracking-[0.25em] text-white/30">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }

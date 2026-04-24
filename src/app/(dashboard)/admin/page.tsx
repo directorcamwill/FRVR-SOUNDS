@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { PLANS, visiblePricingPlans, type PlanId } from "@/lib/plans";
 import { AccountDetailDialog } from "@/components/admin/account-detail-dialog";
 import { SparklineBar } from "@/components/admin/sparkline-bar";
+import { AutomationControl } from "@/components/admin/automation-control";
 
 interface AccountRow {
   id: string;
@@ -212,6 +213,8 @@ export default function AdminPage() {
           </p>
         </div>
       </div>
+
+      <AutomationControl />
 
       <Tabs defaultValue="metrics">
         <TabsList className="flex-wrap h-auto">
