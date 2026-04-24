@@ -285,7 +285,26 @@ const RoomSlide = forwardRef<
       >
         {/* Full-bleed backdrop — real photography if we have it, animated scene as fallback */}
         <div className="absolute inset-0">
-          {room.hero_image_url ? (
+          {room.hero_video_url ? (
+            <motion.div
+              key={`hero-${room.slug}`}
+              initial={{ scale: 1.08 }}
+              animate={{ scale: isActive ? 1.02 : 1.08 }}
+              transition={{ duration: 8, ease: "linear" }}
+              className="absolute inset-0"
+            >
+              <video
+                src={room.hero_video_url}
+                poster={room.hero_image_url ?? undefined}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload={index < 3 ? "auto" : "metadata"}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </motion.div>
+          ) : room.hero_image_url ? (
             <motion.div
               key={`hero-${room.slug}`}
               initial={{ scale: 1.08 }}
