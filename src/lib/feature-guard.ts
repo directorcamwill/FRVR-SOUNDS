@@ -62,6 +62,21 @@ export async function gateAgentRun(
     };
   }
 
+  // Impersonation is read-only — block any write/LLM call that flows through
+  // this gate. Admin must stop impersonating before taking actions.
+  if (access.is_impersonating) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "impersonation_readonly",
+          message: "Stop impersonating before running agents or writing data.",
+        },
+        { status: 403 },
+      ),
+    };
+  }
+
   // Super-admins bypass both feature + quota.
   if (access.is_super_admin) return { ok: true, access };
 
@@ -122,6 +137,18 @@ export async function gateAgentQuota(): Promise<
     return {
       ok: false,
       response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+  if (access.is_impersonating) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "impersonation_readonly",
+          message: "Stop impersonating before running agents or writing data.",
+        },
+        { status: 403 },
+      ),
     };
   }
   if (access.is_super_admin) return { ok: true, access };

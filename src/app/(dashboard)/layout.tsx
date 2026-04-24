@@ -3,6 +3,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { AIAssistant } from "@/components/layout/ai-assistant";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import { TrialStatusBanner } from "@/components/layout/trial-status-banner";
+import { ImpersonationBanner } from "@/components/layout/impersonation-banner";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { AmbientOrbs, Scanline } from "@/components/ui/motion";
 
@@ -27,6 +28,7 @@ export default function DashboardLayout({
           <AmbientOrbs />
           <Scanline />
           <div className="relative z-10">
+            <ImpersonationBanner />
             <AnnouncementBanner />
             <TrialStatusBanner />
             {children}

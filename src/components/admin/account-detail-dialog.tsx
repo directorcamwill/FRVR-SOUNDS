@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PLANS, type PlanId } from "@/lib/plans";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 interface AccountDetail {
@@ -81,6 +81,7 @@ export function AccountDetailDialog({
   const [data, setData] = useState<AccountDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [planSaving, setPlanSaving] = useState(false);
+  const [impersonating, setImpersonating] = useState(false);
 
   useEffect(() => {
     if (!artistId) {
@@ -206,6 +207,39 @@ export function AccountDetailDialog({
                   {planSaving && (
                     <Loader2 className="size-3.5 animate-spin text-white/50" />
                   )}
+                  <button
+                    type="button"
+                    disabled={impersonating}
+                    onClick={async () => {
+                      setImpersonating(true);
+                      try {
+                        const res = await fetch("/api/admin/impersonate", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ artist_id: artistId }),
+                        });
+                        const body = await res.json().catch(() => ({}));
+                        if (!res.ok)
+                          throw new Error(body?.error ?? "Failed to start");
+                        toast.success("Now viewing as this artist.");
+                        window.location.href = "/command-center";
+                      } catch (err) {
+                        toast.error(
+                          err instanceof Error ? err.message : "Failed to start",
+                        );
+                      } finally {
+                        setImpersonating(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-100 hover:bg-amber-500/20 disabled:opacity-50 shrink-0"
+                  >
+                    {impersonating ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : (
+                      <Eye className="size-3" />
+                    )}
+                    View as
+                  </button>
                 </div>
               )}
 

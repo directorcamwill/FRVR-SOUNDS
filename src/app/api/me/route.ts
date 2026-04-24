@@ -22,5 +22,7 @@ export async function GET() {
     agent_runs_this_period: access.agent_runs_this_period,
     agent_runs_limit: access.agent_runs_limit,
     agent_runs_remaining: access.agent_runs_remaining,
+    is_impersonating: access.is_impersonating,
+    impersonated_artist_name: access.impersonated_artist_name,
   });
 }

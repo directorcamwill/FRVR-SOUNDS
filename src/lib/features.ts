@@ -1,6 +1,9 @@
 import { getPlan, planHasFeature, PLANS, type FeatureKey, type PlanId } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { cookies } from "next/headers";
+
+export const IMPERSONATE_COOKIE = "frvr.impersonate";
 
 // Server-side: look up the current user's plan + super-admin state and
 // decide whether they can access a feature. Super-admins always return true
@@ -27,6 +30,12 @@ export interface UserAccess {
   agent_runs_this_period: number;
   agent_runs_limit: number | null; // null = unlimited
   agent_runs_remaining: number | null; // null = unlimited
+  // When a super-admin is "viewing as" another artist, artist_id + plan
+  // fields reflect the TARGET. is_impersonating gates mutations in
+  // feature-guard.ts so admins can look without writing.
+  is_impersonating: boolean;
+  impersonator_profile_id: string | null;
+  impersonated_artist_name: string | null;
 }
 
 export async function getUserAccess(): Promise<UserAccess | null> {
@@ -47,15 +56,40 @@ export async function getUserAccess(): Promise<UserAccess | null> {
       .maybeSingle(),
   ]);
 
+  const isSuperAdmin = !!superAdmin;
+
+  // Impersonation: super-admin only. Cookie carries a target artist_id; if
+  // present we swap the queried artist/subscription context while keeping
+  // profile_id + is_super_admin = true (so the admin can stop impersonating).
+  let impersonatedArtistId: string | null = null;
+  let impersonatedArtistName: string | null = null;
+  if (isSuperAdmin) {
+    const jar = await cookies();
+    const raw = jar.get(IMPERSONATE_COOKIE)?.value;
+    if (raw) {
+      const { data: target } = await admin
+        .from("artists")
+        .select("id, artist_name")
+        .eq("id", raw)
+        .maybeSingle();
+      if (target) {
+        impersonatedArtistId = target.id;
+        impersonatedArtistName = target.artist_name ?? null;
+      }
+    }
+  }
+
+  const effectiveArtistId = impersonatedArtistId ?? artist?.id ?? null;
+
   let planId: PlanId = "internal";
   let status = "internal";
   let trialEndsAt: string | null = null;
   let runsThisPeriod = 0;
-  if (artist?.id) {
+  if (effectiveArtistId) {
     const { data: sub } = await admin
       .from("subscriptions")
       .select("plan_id, status, trial_ends_at, agent_runs_this_period")
-      .eq("artist_id", artist.id)
+      .eq("artist_id", effectiveArtistId)
       .maybeSingle();
     if (sub?.plan_id) planId = sub.plan_id as PlanId;
     if (sub?.status) status = sub.status;
@@ -78,16 +112,19 @@ export async function getUserAccess(): Promise<UserAccess | null> {
 
   return {
     profile_id: user.id,
-    artist_id: artist?.id ?? null,
+    artist_id: effectiveArtistId,
     plan_id: planId,
     effective_plan_id: effectivePlanId,
-    is_super_admin: !!superAdmin,
+    is_super_admin: isSuperAdmin,
     subscription_status: status,
     is_trialing: trialActive,
     trial_ends_at: trialEndsAt,
     agent_runs_this_period: runsThisPeriod,
     agent_runs_limit: agentRunsLimit,
     agent_runs_remaining: remaining,
+    is_impersonating: !!impersonatedArtistId,
+    impersonator_profile_id: impersonatedArtistId ? user.id : null,
+    impersonated_artist_name: impersonatedArtistName,
   };
 }
 
