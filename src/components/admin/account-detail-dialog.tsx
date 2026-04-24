@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PLANS, type PlanId } from "@/lib/plans";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface AccountDetail {
   artist: {
@@ -78,6 +80,7 @@ export function AccountDetailDialog({
 }) {
   const [data, setData] = useState<AccountDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [planSaving, setPlanSaving] = useState(false);
 
   useEffect(() => {
     if (!artistId) {
@@ -155,6 +158,56 @@ export function AccountDetailDialog({
                   </Badge>
                 )}
               </div>
+
+              {artistId && (
+                <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.01] p-2.5">
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-white/40 shrink-0">
+                    Change plan
+                  </span>
+                  <select
+                    disabled={planSaving}
+                    value={data.subscription?.plan_id ?? "starter"}
+                    onChange={async (e) => {
+                      const planId = e.target.value as PlanId;
+                      if (planId === data.subscription?.plan_id) return;
+                      setPlanSaving(true);
+                      try {
+                        const res = await fetch(
+                          `/api/admin/accounts/${artistId}/plan`,
+                          {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ plan_id: planId }),
+                          },
+                        );
+                        const body = await res.json().catch(() => ({}));
+                        if (!res.ok) throw new Error(body?.error ?? "Update failed");
+                        toast.success(`Plan → ${PLANS[planId].name}`);
+                        const refreshed = await fetch(
+                          `/api/admin/accounts/${artistId}`,
+                        );
+                        if (refreshed.ok) setData(await refreshed.json());
+                      } catch (err) {
+                        toast.error(
+                          err instanceof Error ? err.message : "Update failed",
+                        );
+                      } finally {
+                        setPlanSaving(false);
+                      }
+                    }}
+                    className="flex-1 rounded-md border border-white/10 bg-black/40 px-2 py-1 text-xs text-white disabled:opacity-50"
+                  >
+                    {Object.keys(PLANS).map((id) => (
+                      <option key={id} value={id}>
+                        {PLANS[id as PlanId].name}
+                      </option>
+                    ))}
+                  </select>
+                  {planSaving && (
+                    <Loader2 className="size-3.5 animate-spin text-white/50" />
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <SummaryTile label="Songs" value={data.summary.total_songs} />

@@ -35,6 +35,7 @@ import { PLANS, visiblePricingPlans, type PlanId } from "@/lib/plans";
 import { AccountDetailDialog } from "@/components/admin/account-detail-dialog";
 import { SparklineBar } from "@/components/admin/sparkline-bar";
 import { AutomationControl } from "@/components/admin/automation-control";
+import { BroadcastComposer } from "@/components/admin/broadcast-composer";
 
 interface AccountRow {
   id: string;
@@ -255,6 +256,10 @@ export default function AdminPage() {
                 ({libraryCounts.pending})
               </span>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="broadcast">
+            <Megaphone className="size-3.5 mr-1.5" />
+            Broadcast
           </TabsTrigger>
         </TabsList>
 
@@ -719,6 +724,10 @@ export default function AdminPage() {
               </p>
             </Link>
           </div>
+        </TabsContent>
+
+        <TabsContent value="broadcast" className="mt-4">
+          <BroadcastComposer />
         </TabsContent>
       </Tabs>
 
