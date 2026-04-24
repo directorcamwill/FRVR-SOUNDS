@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
 import { GENRES, PRO_AFFILIATIONS } from "@/lib/utils/constants";
 import { toast } from "sonner";
+import { AutomationSettings } from "@/components/settings/automation-settings";
 
 interface SettingsFormValues {
   artist_name: string;
@@ -323,6 +324,8 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AutomationSettings />
     </div>
   );
 }
