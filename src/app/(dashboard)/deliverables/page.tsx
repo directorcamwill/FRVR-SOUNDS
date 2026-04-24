@@ -17,6 +17,7 @@ import {
   Check,
   ChevronRight,
   Pencil,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +34,7 @@ interface Deliverable {
   created_at: string;
 }
 
-const categoryIcons: Record<string, React.ElementType> = {
+const categoryIcons: Record<string, LucideIcon> = {
   music_production: Music,
   sync_submissions: Send,
   content: Sparkles,
@@ -324,7 +325,7 @@ export default function DeliverablesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {deliverables.map((d, index) => {
-            const Icon = categoryIcons[d.category] || Target;
+            const Icon: LucideIcon = categoryIcons[d.category] || Target;
             const pct =
               d.target_count > 0
                 ? Math.min(

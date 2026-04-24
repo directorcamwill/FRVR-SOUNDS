@@ -26,6 +26,7 @@ import {
   Moon,
   LayoutGrid,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +45,7 @@ interface DailyTask {
   created_at: string;
 }
 
-const categoryIcons: Record<string, React.ElementType> = {
+const categoryIcons: Record<string, LucideIcon> = {
   music: Music,
   business: Briefcase,
   content: Sparkles,
@@ -81,7 +82,7 @@ const categories = [
   "learning",
 ];
 
-const timeBlockIcons: Record<string, React.ElementType> = {
+const timeBlockIcons: Record<string, LucideIcon> = {
   morning: Sun,
   afternoon: Sunset,
   evening: Moon,
@@ -404,7 +405,7 @@ export default function DailyPage() {
 
   const renderTask = (task: DailyTask, index: number, isOverdue = false) => {
     const isDone = task.status === "done";
-    const CatIcon = categoryIcons[task.category] || Circle;
+    const CatIcon: LucideIcon = categoryIcons[task.category] || Circle;
 
     return (
       <div
@@ -718,7 +719,7 @@ export default function DailyPage() {
             (block) => {
               const tasks = timeGroups[block];
               if (!tasks || tasks.length === 0) return null;
-              const BlockIcon = timeBlockIcons[block];
+              const BlockIcon: LucideIcon = timeBlockIcons[block];
               const blockLabel =
                 block.charAt(0).toUpperCase() + block.slice(1);
               return (

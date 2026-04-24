@@ -19,6 +19,7 @@ import {
   ChevronRight,
   X,
   Bot,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +35,7 @@ interface Idea {
   created_at: string;
 }
 
-const typeIcons: Record<string, React.ElementType> = {
+const typeIcons: Record<string, LucideIcon> = {
   song: Music,
   content: Sparkles,
   campaign: Megaphone,
@@ -330,7 +331,7 @@ export default function IdeasPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredIdeas.map((idea, index) => {
-            const TypeIcon = typeIcons[idea.type] || Circle;
+            const TypeIcon: LucideIcon = typeIcons[idea.type] || Circle;
             const isExpanded = expandedId === idea.id;
 
             return (
