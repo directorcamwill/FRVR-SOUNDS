@@ -56,5 +56,12 @@ export async function GET(request: Request) {
     signed_audio_url: d.song_file_path ? signedByPath.get(d.song_file_path) ?? null : null,
   }));
 
-  return NextResponse.json({ songs, count: songs.length });
+  return NextResponse.json(
+    { songs, count: songs.length },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+      },
+    },
+  );
 }

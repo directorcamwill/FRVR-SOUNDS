@@ -72,8 +72,17 @@ export async function GET(
     }
   }
 
-  return NextResponse.json({
-    song: { ...deal, signed_audio_url, rooms: inRooms, analysis: analysisRow ?? null },
-    similar,
-  });
+  return NextResponse.json(
+    {
+      song: { ...deal, signed_audio_url, rooms: inRooms, analysis: analysisRow ?? null },
+      similar,
+    },
+    {
+      // Edge-cache the public song record for 30s. Signed audio URL is valid
+      // for 2h, so a 30s edge cache still serves a URL with > 1h59m left.
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+      },
+    },
+  );
 }

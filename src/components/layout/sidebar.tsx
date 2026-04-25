@@ -89,6 +89,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     label: "SYSTEM",
     items: [
       { label: "Health", href: "/health", icon: Activity },
+      { label: "What's new", href: "/whats-new", icon: Sparkles },
       { label: "Settings", href: "/settings", icon: Settings },
     ],
   },

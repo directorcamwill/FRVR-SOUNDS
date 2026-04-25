@@ -42,6 +42,7 @@ interface AccountRow {
   artist_name: string;
   profile_id: string;
   created_at: string;
+  last_active_at: string | null;
   subscriptions: Array<{
     plan_id: string;
     status: string;
@@ -126,6 +127,7 @@ const kindStyles: Record<string, string> = {
 
 export default function AdminPage() {
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
+  const [accountSearch, setAccountSearch] = useState("");
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [trends, setTrends] = useState<TrendSeries | null>(null);
@@ -477,70 +479,98 @@ export default function AdminPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="accounts" className="mt-4">
+        <TabsContent value="accounts" className="mt-4 space-y-3">
+          <Input
+            value={accountSearch}
+            onChange={(e) => setAccountSearch(e.target.value)}
+            placeholder="Search by artist name…"
+            className="max-w-sm bg-zinc-950 border-white/10"
+          />
           {loading ? (
             <Skeleton className="h-64" />
           ) : accounts.length === 0 ? (
             <p className="text-sm text-[#A3A3A3]">No accounts yet.</p>
           ) : (
-            <div className="space-y-2">
-              {accounts.map((a) => {
-                const sub = a.subscriptions?.[0];
-                const plan = PLANS[(sub?.plan_id ?? "internal") as PlanId];
+            (() => {
+              const q = accountSearch.trim().toLowerCase();
+              const filtered = q
+                ? accounts.filter((a) =>
+                    a.artist_name.toLowerCase().includes(q),
+                  )
+                : accounts;
+              if (filtered.length === 0) {
                 return (
-                  <button
-                    key={a.id}
-                    onClick={() => setOpenArtistId(a.id)}
-                    className="w-full text-left"
-                  >
-                    <Card className="hover:border-[#DC2626]/40 transition-colors">
-                      <CardContent className="py-3 flex items-center justify-between gap-3 flex-wrap">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">
-                            {a.artist_name}
-                          </p>
-                          <p className="text-[11px] text-[#A3A3A3]">
-                            Joined{" "}
-                            {new Date(a.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] bg-[#DC2626]/10 text-[#DC2626] border-[#DC2626]/30"
-                          >
-                            {plan?.name ?? sub?.plan_id ?? "—"}
-                          </Badge>
-                          {sub?.status && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] bg-[#111] capitalize"
-                            >
-                              {sub.status}
-                            </Badge>
-                          )}
-                          {sub?.stripe_customer_id ? (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                            >
-                              Stripe linked
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] bg-[#111] text-[#666]"
-                            >
-                              No Stripe
-                            </Badge>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </button>
+                  <p className="text-sm text-[#A3A3A3]">
+                    No artists match &ldquo;{accountSearch}&rdquo;.
+                  </p>
                 );
-              })}
-            </div>
+              }
+              return (
+                <div className="space-y-2">
+                  {filtered.map((a) => {
+                    const sub = a.subscriptions?.[0];
+                    const plan = PLANS[(sub?.plan_id ?? "internal") as PlanId];
+                    return (
+                      <button
+                        key={a.id}
+                        onClick={() => setOpenArtistId(a.id)}
+                        className="w-full text-left"
+                      >
+                        <Card className="hover:border-[#DC2626]/40 transition-colors">
+                          <CardContent className="py-3 flex items-center justify-between gap-3 flex-wrap">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-white truncate">
+                                {a.artist_name}
+                              </p>
+                              <p className="text-[11px] text-[#A3A3A3]">
+                                Joined{" "}
+                                {new Date(a.created_at).toLocaleDateString()}
+                                {a.last_active_at && (
+                                  <span className="ml-2 text-white/50">
+                                    · active {timeSince(a.last_active_at)}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-[#DC2626]/10 text-[#DC2626] border-[#DC2626]/30"
+                              >
+                                {plan?.name ?? sub?.plan_id ?? "—"}
+                              </Badge>
+                              {sub?.status && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] bg-[#111] capitalize"
+                                >
+                                  {sub.status}
+                                </Badge>
+                              )}
+                              {sub?.stripe_customer_id ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                >
+                                  Stripe linked
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] bg-[#111] text-[#666]"
+                                >
+                                  No Stripe
+                                </Badge>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()
           )}
         </TabsContent>
 
@@ -746,6 +776,22 @@ export default function AdminPage() {
       />
     </div>
   );
+}
+
+function timeSince(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  const sec = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+  if (sec < 60) return "just now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 48) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  if (day < 30) return `${day}d ago`;
+  const mo = Math.floor(day / 30);
+  if (mo < 12) return `${mo}mo ago`;
+  return `${Math.floor(mo / 12)}y ago`;
 }
 
 function MetricTile({

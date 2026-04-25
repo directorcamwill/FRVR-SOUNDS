@@ -2,6 +2,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
 // Public — list all published rooms with a count of songs in each.
+// Cached at the edge for 60s (rooms change rarely; SWR for 5m).
+const CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+};
+
 export async function GET() {
   const admin = createAdminClient();
 
@@ -29,5 +34,5 @@ export async function GET() {
     song_count: countByRoom.get(r.id) ?? 0,
   }));
 
-  return NextResponse.json({ rooms: withCounts });
+  return NextResponse.json({ rooms: withCounts }, { headers: CACHE_HEADERS });
 }
