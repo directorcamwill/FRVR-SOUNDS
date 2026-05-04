@@ -273,10 +273,10 @@ export function tierToPlanId(tier: RecommendedTier): PlanId {
 
 export function tierLabel(tier: RecommendedTier): string {
   return tier === "signal"
-    ? "Signal"
+    ? "Starter"
     : tier === "frequency"
-      ? "Frequency"
-      : "Broadcast";
+      ? "Pro Catalog"
+      : "Sync Prepared";
 }
 
 export function tierTagline(tier: RecommendedTier): string {

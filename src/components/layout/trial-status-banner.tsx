@@ -77,7 +77,7 @@ export function TrialStatusBanner() {
           )}
         </p>
         <p className="text-[11px] text-white/50 mt-0.5">
-          Frequency and Broadcast features unlock when your card is charged.
+          Pro Catalog and Sync Prepared features unlock when your card is charged.
         </p>
       </div>
       <Link

@@ -89,7 +89,7 @@ const STUDIO_FEATURES: FeatureKey[] = [
 export const PLANS: Record<PlanId, PlanDefinition> = {
   starter: {
     id: "starter",
-    name: "Signal",
+    name: "Starter",
     tagline: "We tell you what to ship. Templates, hook bank, and a guided weekly plan.",
     priceMonthly: 49,
     features: STARTER_FEATURES,
@@ -100,7 +100,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   },
   pro: {
     id: "pro",
-    name: "Frequency",
+    name: "Pro Catalog",
     tagline: "We run the system with you. Full Brand Journey, Content Engine, weekly Feedback Loop.",
     priceMonthly: 199,
     features: PRO_FEATURES,
@@ -112,7 +112,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   },
   studio: {
     id: "studio",
-    name: "Broadcast",
+    name: "Sync Prepared",
     tagline: "We help you scale and segment. Audience modeling, campaign builder, monetization automations, priority library intake, direct strategy calls.",
     priceMonthly: 499,
     features: STUDIO_FEATURES,

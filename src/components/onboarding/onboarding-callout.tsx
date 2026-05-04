@@ -70,7 +70,7 @@ export function OnboardingCallout() {
             Take the 10-question Tier Quiz
           </p>
           <p className="text-xs text-white/60 mt-0.5">
-            Behavioral, not survey. We pick a tier (Signal / Frequency / Broadcast) that fits your real cadence and revenue maturity. ~3 minutes.
+            Behavioral, not survey. We pick a tier (Starter / Pro Catalog / Sync Prepared) that fits your real cadence and revenue maturity. ~3 minutes.
           </p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2">
             <Link
