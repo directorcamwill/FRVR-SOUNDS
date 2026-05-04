@@ -59,7 +59,7 @@ function SignupForm() {
       <div className="mb-5">
         <h1 className="text-xl font-semibold text-white">Create your account</h1>
         <p className="text-sm text-[#A3A3A3] mt-1">
-          Start your 14-day trial — no charge today.
+          Start your 7-day trial — card required, no charge today.
         </p>
       </div>
 
@@ -100,7 +100,7 @@ function SignupForm() {
           variant="outline"
           className="text-[9px] bg-[#111] mt-2 uppercase tracking-wider"
         >
-          14-day trial — no card required
+          7-day trial — card required at checkout
         </Badge>
       </div>
 

@@ -45,15 +45,19 @@ export async function POST(request: Request) {
 
   // Seed subscription + empty brand wiki via admin client so we don't get
   // tripped up by RLS during first-run setup.
+  //
+  // V2 trial flow: new users land on `incomplete` — they can poke around but
+  // most features are gated behind `planHasFeature` for their selected plan.
+  // The 7-day trial is granted by Stripe checkout (with card on file). The
+  // signup banner + TrialStatusBanner push them to /pricing to start it.
   const admin = createAdminClient();
   await admin.from("subscriptions").upsert(
     {
       artist_id: artist.id,
       plan_id: planId,
-      status: "trialing",
-      current_period_ends_at: new Date(
-        Date.now() + 14 * 24 * 60 * 60 * 1000
-      ).toISOString(),
+      status: "incomplete",
+      trial_ends_at: null,
+      current_period_ends_at: null,
     },
     { onConflict: "artist_id" }
   );

@@ -76,7 +76,10 @@ export default function OnboardingPage() {
         return;
       }
 
-      router.push("/command-center");
+      // V2: new users land on 'incomplete' status — push them to /pricing to
+      // start the 7-day-with-card trial. Pricing page handles ?welcome=1 to
+      // show a contextual "Start your trial" headline.
+      router.push("/pricing?welcome=1");
     } catch {
       toast.error("Something went wrong");
       setLoading(false);
