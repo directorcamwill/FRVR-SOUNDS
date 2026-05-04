@@ -1,5 +1,9 @@
 "use client";
 
+// Skip prerender — useSearchParams() bails out of static generation;
+// this is an auth-gated dashboard page anyway.
+export const dynamic = "force-dynamic";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
