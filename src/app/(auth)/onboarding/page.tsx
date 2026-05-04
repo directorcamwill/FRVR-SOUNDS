@@ -143,13 +143,28 @@ export default function OnboardingPage() {
             </select>
           </div>
 
-          <Button
-            className="w-full"
-            onClick={() => setStep(2)}
-            disabled={!artistName}
-          >
-            Continue
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              className="flex-1"
+              onClick={() => setStep(2)}
+              disabled={!artistName}
+            >
+              Continue
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleComplete}
+              disabled={!artistName || loading}
+            >
+              {loading ? "Saving..." : "Save profile"}
+            </Button>
+          </div>
+          {!artistName && (
+            <p className="text-[11px] text-[#A3A3A3] text-center">
+              Artist name is required to save.
+            </p>
+          )}
         </div>
       )}
 
@@ -183,6 +198,14 @@ export default function OnboardingPage() {
               Continue
             </Button>
           </div>
+          <Button
+            variant="ghost"
+            className="w-full text-[#A3A3A3] hover:text-white"
+            onClick={handleComplete}
+            disabled={!artistName || loading}
+          >
+            {loading ? "Saving..." : "Save profile and finish later"}
+          </Button>
         </div>
       )}
 
@@ -190,7 +213,9 @@ export default function OnboardingPage() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>What are your sync goals?</Label>
-            <p className="text-xs text-[#A3A3A3]">Select all that apply</p>
+            <p className="text-xs text-[#A3A3A3]">
+              Select all that apply (optional)
+            </p>
             <div className="grid grid-cols-2 gap-2 mt-2">
               {GOAL_OPTIONS.map((goal) => (
                 <button
@@ -216,9 +241,9 @@ export default function OnboardingPage() {
             <Button
               className="flex-1"
               onClick={handleComplete}
-              disabled={loading || goals.length === 0}
+              disabled={loading || !artistName}
             >
-              {loading ? "Setting up..." : "Complete Setup"}
+              {loading ? "Saving..." : "Save profile"}
             </Button>
           </div>
         </div>
