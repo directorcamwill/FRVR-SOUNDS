@@ -17,10 +17,19 @@ import { getUserAccess } from "@/lib/features";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const access = await getUserAccess();
-  if (!access?.is_super_admin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+export async function GET(request: Request) {
+  // Allow either super-admin browser session OR a Bearer CRON_SECRET (for
+  // operator scripts / curl from a terminal that doesn't have a browser
+  // session).
+  const auth = request.headers.get("authorization") ?? "";
+  const cronSecret = process.env.CRON_SECRET ?? "";
+  const cronAuthOk = !!cronSecret && auth === `Bearer ${cronSecret}`;
+
+  if (!cronAuthOk) {
+    const access = await getUserAccess();
+    if (!access?.is_super_admin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   const key = process.env.ANTHROPIC_API_KEY ?? "";
