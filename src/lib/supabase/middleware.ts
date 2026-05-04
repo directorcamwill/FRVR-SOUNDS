@@ -56,5 +56,36 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Force authenticated users through /onboarding before they can use the app.
+  // Bypass when:
+  //   - user is unauthenticated (handled above)
+  //   - already on /onboarding (no loop)
+  //   - hitting /api/* (so the onboarding form's own POST works)
+  //   - hitting /pricing or /logout (let them browse plans / leave)
+  //   - hitting Next internals (already filtered by matcher above, but safe)
+  if (
+    user &&
+    !path.startsWith("/onboarding") &&
+    !path.startsWith("/api") &&
+    !path.startsWith("/pricing") &&
+    !path.startsWith("/logout") &&
+    !path.startsWith("/_next") &&
+    path !== "/offline"
+  ) {
+    // Read the profile flag — failure (e.g. row missing) defaults to false so
+    // brand-new users who haven't been provisioned still get pushed to onboarding.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!profile?.onboarding_completed) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/onboarding";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return supabaseResponse;
 }

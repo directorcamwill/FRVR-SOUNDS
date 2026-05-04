@@ -66,5 +66,16 @@ export async function POST(request: Request) {
     { onConflict: "artist_id" }
   );
 
+  // Flip the profile flag so the middleware stops gating them at /onboarding.
+  // Also mirror artist_name onto the profile for UI surfaces that read from
+  // profiles instead of joining artists (sidebar avatar, admin lists, etc.).
+  await admin
+    .from("profiles")
+    .update({
+      onboarding_completed: true,
+      artist_name: body.artist_name,
+    })
+    .eq("id", user.id);
+
   return NextResponse.json({ success: true, plan_id: planId });
 }
