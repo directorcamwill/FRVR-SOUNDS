@@ -15,6 +15,10 @@ export function TrialStatusBanner() {
   const { access, loading } = useMyAccess();
   if (loading) return null;
 
+  // Super-admins (operator accounts) never see trial / billing banners.
+  // They bypass every server-side gate already; the UI should mirror that.
+  if (access.is_super_admin) return null;
+
   // V2 — incomplete: user signed up but hasn't started Stripe trial yet.
   // Push them to /pricing to start the 7-day-with-card flow.
   if (access.subscription_status === "incomplete") {
