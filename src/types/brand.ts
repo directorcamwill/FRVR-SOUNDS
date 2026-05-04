@@ -28,8 +28,9 @@ export type SyncFormatTarget =
   | "podcast"
   | "library";
 
-// Brand Journey modules (migration 00025). Artists progress through these
-// in the Brand tab; each module writes to a slice of brand_wiki.
+// Brand Journey modules (migration 00025 V1, 00030 V2 adds "engine").
+// Artists progress through these in the Brand tab; each module writes to a
+// slice of brand_wiki.
 export type BrandModuleId =
   | "identity"
   | "emotional"
@@ -37,7 +38,92 @@ export type BrandModuleId =
   | "audience"
   | "visual"
   | "sonic"
-  | "routes";
+  | "routes"
+  | "engine";
+
+export type RevenuePath =
+  | "sync"
+  | "streaming"
+  | "direct_fan"
+  | "publishing"
+  | "live"
+  | "production_for_hire";
+
+export interface NicheCompetitor {
+  name: string;
+  url: string;
+  dominant_move: string;
+  weak_spot: string;
+}
+
+export interface ContentPillar {
+  id: string;
+  name: string;
+  angle: string;
+  sample_format?: string | null;
+}
+
+export interface ContentFormat {
+  id: string;
+  name: string;
+  structure: string;
+  time_to_produce_min?: number | null;
+  pillar_id?: string | null;
+}
+
+export interface PlatformStrategy {
+  primary?: string | null;
+  secondary?: string[];
+  format_to_platform?: Record<string, string[]>;
+}
+
+export interface WeeklyCadence {
+  slots_per_platform?: Record<string, number>;
+  batch_day?: string | null;
+  ship_days?: string[];
+}
+
+export interface HookTemplate {
+  id: string;
+  text: string;
+  pillar_id?: string | null;
+  emotion?: string | null;
+}
+
+export interface ConversionStage {
+  stage: "stranger" | "listener" | "follower" | "subscriber" | "buyer";
+  cta: string;
+}
+
+export interface OfferLadder {
+  offer_100?: { price?: number | null; format: string; converts_from?: string | null } | null;
+  offer_1k?: { price?: number | null; format: string; converts_from?: string | null } | null;
+  offer_10k?: { price?: number | null; format: string; converts_from?: string | null } | null;
+}
+
+export interface ContentRevenueMapEntry {
+  pillar_id: string;
+  revenue_path: RevenuePath;
+  cta: string;
+  ladder_tier: "100" | "1k" | "10k";
+}
+
+export interface ConsistencyPlan {
+  mvp_plan?: string | null;
+  batch_day?: string | null;
+  batch_checklist?: string[];
+  max_hours_per_week?: number | null;
+}
+
+export interface ContentFitScore {
+  identity_match: number;
+  emotional_accuracy: number;
+  audience_relevance: number;
+  platform_fit: number;
+  total: number;
+  flags?: string[];
+  suggestions?: Array<{ dimension: string; suggestion: string }>;
+}
 
 export interface WhatNotItem {
   confused_with: string;
@@ -140,6 +226,46 @@ export interface BrandWiki {
   // Set once, the first time all 7 modules cross 80%. Used to gate the
   // celebratory toast + unlock the 3D Constellation view.
   journey_activated_at: string | null;
+
+  // ─── V2 — Identity addition (00030) ───
+  public_truth: string | null;
+
+  // ─── V2 — Niche Domination Layer (00030) ───
+  niche_micro_statement: string | null;
+  niche_competitors: NicheCompetitor[];
+  niche_gap: string | null;
+  niche_ownable_territory: string | null;
+
+  // ─── V2 — Routes → Revenue (00030) ───
+  revenue_primary_path: RevenuePath | null;
+  revenue_secondary_paths: RevenuePath[];
+  revenue_offer_100: string | null;
+  revenue_offer_1k: string | null;
+  revenue_offer_10k: string | null;
+
+  // ─── V2 — Content Engine, Module 8 (00030) ───
+  content_pillars: ContentPillar[];
+  content_formats: ContentFormat[];
+  platform_strategy: PlatformStrategy;
+  weekly_cadence: WeeklyCadence;
+  // Flat fields written by the engine.cadence multi_field (see 00032).
+  weekly_cadence_primary_count: number | null;
+  weekly_cadence_batch_day: string | null;
+  weekly_cadence_ship_days: string | null;
+  hook_library: HookTemplate[];
+  conversion_path: ConversionStage[];
+
+  // ─── V2 — Cross-module artifacts (00030) ───
+  offer_ladder: OfferLadder;
+  content_revenue_map: ContentRevenueMapEntry[];
+  consistency_plan: ConsistencyPlan;
+
+  // ─── V2 — Per-module generated outputs (00030) ───
+  // Hooks, scripts, templates produced by each module's Output Layer.
+  module_outputs: Record<string, unknown>;
+
+  // ─── V2 — Broadcast tier audience segmentation (00030) ───
+  audience_models: Array<Record<string, unknown>>;
 
   // ─── Meta ───
   completeness_pct: number;

@@ -27,6 +27,7 @@ import {
   UserRound,
   Library,
   Shield,
+  Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GlowDot } from "@/components/ui/motion";
@@ -47,6 +48,7 @@ interface NavItem {
 const coreItems: NavItem[] = [
   { label: "Command Center", href: "/command-center", icon: LayoutDashboard },
   { label: "Brand", href: "/brand", icon: Palette, feature: "brand_wiki_edit" },
+  { label: "Weekly Execution", href: "/execution", icon: Flame, feature: "brand_wiki_edit" },
   { label: "Song Vault", href: "/vault", icon: Music, feature: "song_vault" },
   { label: "Pipeline", href: "/pipeline", icon: GitBranch, feature: "pipeline_tracking" },
   { label: "Submissions", href: "/submissions", icon: Send, feature: "pipeline_tracking" },

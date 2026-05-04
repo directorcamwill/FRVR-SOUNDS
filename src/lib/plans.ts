@@ -89,8 +89,8 @@ const STUDIO_FEATURES: FeatureKey[] = [
 export const PLANS: Record<PlanId, PlanDefinition> = {
   starter: {
     id: "starter",
-    name: "Starter",
-    tagline: "Core artist toolkit. Organize your catalog and learn sync the right way.",
+    name: "Signal",
+    tagline: "We tell you what to ship. Templates, hook bank, and a guided weekly plan.",
     priceMonthly: 49,
     features: STARTER_FEATURES,
     agent_run_quota: 5,
@@ -100,8 +100,8 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   },
   pro: {
     id: "pro",
-    name: "Pro Catalog",
-    tagline: "Full AI guidance + matching. Your catalog, pitch-ready.",
+    name: "Frequency",
+    tagline: "We run the system with you. Full Brand Journey, Content Engine, weekly Feedback Loop.",
     priceMonthly: 199,
     features: PRO_FEATURES,
     agent_run_quota: 100,
@@ -112,8 +112,8 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   },
   studio: {
     id: "studio",
-    name: "Sync Prepared",
-    tagline: "Catalog is Pro + every track sync-prepared. Unlimited agents, priority library intake, direct strategy calls.",
+    name: "Broadcast",
+    tagline: "We help you scale and segment. Audience modeling, campaign builder, monetization automations, priority library intake, direct strategy calls.",
     priceMonthly: 499,
     features: STUDIO_FEATURES,
     agent_run_quota: null,

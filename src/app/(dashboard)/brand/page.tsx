@@ -19,6 +19,7 @@ import { LiveWikiPanel } from "@/components/brand/live-wiki-panel";
 import { QuestionCard } from "@/components/brand/question-card";
 import { JourneyNotes } from "@/components/brand/journey-notes";
 import { BrandWikiRewards } from "@/components/brand/brand-wiki-rewards";
+import { ModuleOutputsPanel } from "@/components/brand/module-outputs-panel";
 import type { BrandModuleId, BrandWiki } from "@/types/brand";
 
 export default function BrandPage() {
@@ -319,6 +320,14 @@ export default function BrandPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* V2 Output Layer — only renders for modules that have generators */}
+          <ModuleOutputsPanel
+            moduleId={moduleId}
+            wiki={wiki}
+            onWikiUpdated={fetchWiki}
+          />
+
           <JourneyNotes wiki={wiki} onSave={saveWikiPatch} />
           <BrandWikiRewards
             wiki={wiki}

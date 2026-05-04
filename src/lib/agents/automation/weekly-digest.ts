@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, type SendEmailResult } from "@/lib/email/resend";
+import { persistFeedbackRun } from "@/lib/feedback/persist-run";
 
 /**
  * Weekly digest — summarizes the last 7 days of activity for an artist and
@@ -8,7 +9,12 @@ import { sendEmail, type SendEmailResult } from "@/lib/email/resend";
  *   - new library submissions + accepted deals
  *   - agent runs
  *   - unresolved alerts
+ *   - V2 Feedback Loop (shipped pieces, top signal / anti-signal)
  * Pulls the email off profiles.email.
+ *
+ * As a side effect this also persists a `feedback_runs` row for the artist's
+ * current week so /api/feedback-runs/current and the Growth Tracker can
+ * surface week-over-week history without recomputing on every read.
  */
 
 export interface DigestResult {
@@ -26,6 +32,10 @@ export interface DigestSummary {
   unresolved_alerts: number;
   window_start: string;
   window_end: string;
+  // V2 Feedback Loop — present when content_pieces/feedback_runs are wired.
+  pieces_shipped: number;
+  top_signal: string | null;
+  top_anti_signal: string | null;
 }
 
 export async function runWeeklyDigest(artistId: string): Promise<DigestResult> {
@@ -146,6 +156,24 @@ async function prepareDigestForArtist(artistId: string): Promise<{
       .maybeSingle(),
   ]);
 
+  // V2 — persist a feedback_runs row + read the resulting digest aggregates.
+  // Best-effort: if migration 00030 hasn't been applied or the artist has no
+  // shipped pieces yet, we just skip the V2 fields below.
+  let pieces_shipped = 0;
+  let top_signal: string | null = null;
+  let top_anti_signal: string | null = null;
+  try {
+    const persisted = await persistFeedbackRun(artist.id, windowEnd);
+    if (persisted) {
+      pieces_shipped = persisted.digest.pieces_shipped;
+      top_signal = persisted.digest.top_signal?.message ?? null;
+      top_anti_signal = persisted.digest.top_anti_signal?.message ?? null;
+    }
+  } catch (e) {
+    // Don't fail the whole digest send because of a feedback-run persist error.
+    console.error("persistFeedbackRun failed:", e);
+  }
+
   const summary: DigestSummary = {
     songs_added: songsRes.count ?? 0,
     library_submissions: submissionsRes.count ?? 0,
@@ -154,6 +182,9 @@ async function prepareDigestForArtist(artistId: string): Promise<{
     unresolved_alerts: alertsRes.count ?? 0,
     window_start: startIso,
     window_end: endIso,
+    pieces_shipped,
+    top_signal,
+    top_anti_signal,
   };
 
   const artistName =
@@ -178,6 +209,9 @@ function emptySummary(startIso: string, endIso: string): DigestSummary {
     unresolved_alerts: 0,
     window_start: startIso,
     window_end: endIso,
+    pieces_shipped: 0,
+    top_signal: null,
+    top_anti_signal: null,
   };
 }
 
@@ -229,6 +263,7 @@ function renderDigestHtml(artistName: string, s: DigestSummary): string {
             </tr>
             <tr><td>
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid #222;">
+                ${stat("Pieces shipped", s.pieces_shipped)}
                 ${stat("Songs added", s.songs_added)}
                 ${stat("Library submissions", s.library_submissions)}
                 ${stat("Deals accepted", s.deals_accepted)}
@@ -236,6 +271,31 @@ function renderDigestHtml(artistName: string, s: DigestSummary): string {
                 ${stat("Open alerts", s.unresolved_alerts)}
               </table>
             </td></tr>
+            ${
+              s.top_signal || s.top_anti_signal
+                ? `<tr><td style="padding-top:24px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                      <tr><td style="padding-bottom:8px;"><span style="color:#a1a1aa;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;">Feedback Loop</span></td></tr>
+                      ${
+                        s.top_signal
+                          ? `<tr><td style="padding:10px 12px;background:#0a1410;border-left:3px solid #10b981;color:#d4d4d8;font-size:13px;line-height:1.5;">
+                              <span style="color:#10b981;font-size:11px;text-transform:uppercase;letter-spacing:0.15em;">Top signal</span><br />
+                              ${escapeHtml(s.top_signal)}
+                            </td></tr>`
+                          : ""
+                      }
+                      ${
+                        s.top_anti_signal
+                          ? `<tr><td style="padding:10px 12px;background:#140a0a;border-left:3px solid #dc2626;color:#d4d4d8;font-size:13px;line-height:1.5;margin-top:8px;">
+                              <span style="color:#dc2626;font-size:11px;text-transform:uppercase;letter-spacing:0.15em;">Anti-signal</span><br />
+                              ${escapeHtml(s.top_anti_signal)}
+                            </td></tr>`
+                          : ""
+                      }
+                    </table>
+                  </td></tr>`
+                : ""
+            }
             <tr>
               <td style="padding-top:32px;">
                 <a href="https://frvr-sounds.vercel.app/command-center" style="display:inline-block;background:#dc2626;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:600;">Open Command Center</a>
@@ -255,17 +315,24 @@ function renderDigestHtml(artistName: string, s: DigestSummary): string {
 }
 
 function renderDigestText(artistName: string, s: DigestSummary): string {
-  return [
+  const lines = [
     `Your week in review, ${artistName}.`,
     "",
+    `Pieces shipped: ${s.pieces_shipped}`,
     `Songs added: ${s.songs_added}`,
     `Library submissions: ${s.library_submissions}`,
     `Deals accepted: ${s.deals_accepted}`,
     `Agent runs: ${s.agent_runs}`,
     `Open alerts: ${s.unresolved_alerts}`,
-    "",
-    "Open Command Center: https://frvr-sounds.vercel.app/command-center",
-  ].join("\n");
+  ];
+  if (s.top_signal) {
+    lines.push("", `Top signal: ${s.top_signal}`);
+  }
+  if (s.top_anti_signal) {
+    lines.push(`Anti-signal: ${s.top_anti_signal}`);
+  }
+  lines.push("", "Open Command Center: https://frvr-sounds.vercel.app/command-center");
+  return lines.join("\n");
 }
 
 function escapeHtml(s: string): string {

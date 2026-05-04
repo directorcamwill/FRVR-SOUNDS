@@ -10,7 +10,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   Loader2,
+  Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   TextInput,
   TextareaInput,
@@ -221,6 +223,25 @@ export function QuestionCard({
               onCritique={(result) => setCritique(result)}
             />
           </div>
+        )}
+
+        {/* V2 — Module 8 generators. Read the wiki, propose pillars/hooks. */}
+        {(question.id === "engine.pillars" ||
+          question.id === "engine.hooks") && (
+          <GenerateFromWikiButton
+            mode={
+              question.id === "engine.pillars"
+                ? "generate_pillars"
+                : "generate_hooks"
+            }
+            wiki={wiki}
+            onGenerated={async (items) => {
+              const next: DraftState = { kind: "repeater", items };
+              setDraft(next);
+              const patch = draftToPatch(question, next);
+              await onAnswer(patch);
+            }}
+          />
         )}
 
         {/* Examples */}
@@ -643,4 +664,101 @@ function renderInput({
         />
       );
   }
+}
+
+// ── V2 — Module 8 wiki-driven generator button ───────────────────────────
+// Calls /api/agents/brand-director with mode=generate_pillars or generate_hooks,
+// receives an array of items, hands them to the parent via onGenerated.
+function GenerateFromWikiButton({
+  mode,
+  wiki,
+  onGenerated,
+}: {
+  mode: "generate_pillars" | "generate_hooks";
+  wiki: BrandWiki;
+  onGenerated: (items: Array<Record<string, string>>) => void | Promise<void>;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [reasoning, setReasoning] = useState<string | null>(null);
+
+  const label =
+    mode === "generate_pillars"
+      ? "Generate 3 pillars from your Wiki"
+      : "Generate 10 hooks from your Wiki";
+
+  const run = async () => {
+    setLoading(true);
+    try {
+      const body: Record<string, unknown> = { mode };
+      if (mode === "generate_hooks") {
+        // Pass any locked pillars so hooks can be tagged correctly.
+        const pillars = (wiki.content_pillars ?? []).map((p) => ({
+          id: p.id,
+          name: p.name,
+        }));
+        if (pillars.length > 0) body.pillars = pillars;
+      }
+      const res = await fetch("/api/agents/brand-director", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Generation failed");
+      const items: Array<Record<string, string>> =
+        mode === "generate_pillars"
+          ? (data.pillars ?? []).map((p: Record<string, unknown>) => ({
+              id: String(p.id ?? ""),
+              name: String(p.name ?? ""),
+              angle: String(p.angle ?? ""),
+              sample_format: String(p.sample_format ?? ""),
+            }))
+          : (data.hooks ?? []).map((h: Record<string, unknown>) => ({
+              id: String(h.id ?? ""),
+              text: String(h.text ?? ""),
+              pillar_id: String(h.pillar_id ?? ""),
+              emotion: String(h.emotion ?? ""),
+            }));
+      if (items.length === 0) {
+        toast.error("Director returned no items. Try filling more wiki fields first.");
+        return;
+      }
+      setReasoning(typeof data.reasoning === "string" ? data.reasoning : null);
+      await onGenerated(items);
+      toast.success(
+        mode === "generate_pillars"
+          ? `${items.length} pillars proposed — review and edit before saving.`
+          : `${items.length} hooks proposed — review and edit before saving.`,
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Generation failed";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 pt-1">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={run}
+        disabled={loading}
+        className="border-[#DC2626]/40 text-white hover:bg-[#DC2626]/10"
+      >
+        {loading ? (
+          <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+        ) : (
+          <Sparkles className="size-3.5 mr-1.5" />
+        )}
+        {label}
+      </Button>
+      {reasoning && (
+        <p className="text-xs text-white/50 italic">
+          Director&apos;s reasoning: {reasoning}
+        </p>
+      )}
+    </div>
+  );
 }

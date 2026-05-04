@@ -157,6 +157,22 @@ export const MODULE_AGENTS: Record<BrandModuleId, AgentLink[]> = {
       href: "/supervisors",
     },
   ],
+  engine: [
+    {
+      id: "weekly_execution",
+      label: "Weekly Execution",
+      purpose:
+        "Runs your hook library, calendar, and Content Fit scoring in one screen.",
+      href: "/execution",
+    },
+    {
+      id: "content_director",
+      label: "Content Director",
+      purpose:
+        "Reads your pillars + cadence + hooks to draft this week's posts.",
+      href: "/content",
+    },
+  ],
 };
 
 // Short one-liner per module, shown in the dossier header.
@@ -174,5 +190,7 @@ export const MODULE_DESCRIPTIONS: Record<BrandModuleId, string> = {
   sonic:
     "What the music sounds like before anyone knows it's you. Genre, moods, BPM, textures, reference tracks.",
   routes:
-    "The lanes your music goes to work. Sync format targets, libraries, formats to avoid.",
+    "The lanes your music goes to work. Sync format targets, libraries, formats to avoid. V2: primary revenue path + 100/1k/10k offer ladder.",
+  engine:
+    "Where identity becomes weekly output. Pillars, formats, platform mapping, weekly cadence, hook library, conversion path.",
 };

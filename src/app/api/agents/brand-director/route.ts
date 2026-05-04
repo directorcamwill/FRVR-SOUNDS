@@ -7,6 +7,16 @@ import {
   runDirectorsNotesCritique,
   runDirectorsNotesFollowUp,
   runDirectorsNotesSummarize,
+  runGeneratePillars,
+  runGenerateHooks,
+  runScoreContent,
+  runGenerateOriginScript,
+  runGenerateContrarianHooks,
+  runGenerateCaptionStarters,
+  runGenerateMoodFormatMap,
+  runMultiplyPost,
+  runMakeMoreViral,
+  runMakeMoreNiche,
 } from "@/lib/agents/brand-director";
 import type { BrandFocus } from "@/types/brand";
 import { gateAgentRun } from "@/lib/feature-guard";
@@ -31,10 +41,38 @@ import { incrementAgentRunCounter } from "@/lib/features";
  *   mode: "summarize_to_wiki" — commit module answers to the Wiki (e.g. Identity → bios)
  *     Body: { module_id }
  *
- * All modes are gated by `ai_brand_director` + consume one agent run.
+ *   mode: "generate_pillars" (V2) — propose 3 content pillars from the wiki
+ *     Body: {} — reads the whole wiki
+ *     Returns: { pillars: [...], reasoning, confidence }
+ *
+ *   mode: "generate_hooks" (V2) — propose 10 reusable hook templates
+ *     Body: { pillars?: [{id, name}] } — locked pillars improve targeting
+ *     Returns: { hooks: [...], reasoning, confidence }
+ *
+ *   mode: "score_content" (V2) — 4-dim Content Fit Scoring on a piece
+ *     Body: { piece: { platform, hook, body, cta, pillar_id?, format_id? } }
+ *     Returns: { score: { identity_match, emotional_accuracy, audience_relevance, platform_fit, total, flags[], suggestions[], reasoning, confidence } }
+ *
+ * summarize_to_wiki is gated by `brand_wiki_activated`. All other modes are
+ * gated by `ai_brand_director`. Each call consumes one agent run.
  */
 
-type Mode = "guide" | "refine_field" | "critique" | "follow_up" | "summarize_to_wiki";
+type Mode =
+  | "guide"
+  | "refine_field"
+  | "critique"
+  | "follow_up"
+  | "summarize_to_wiki"
+  | "generate_pillars"
+  | "generate_hooks"
+  | "score_content"
+  | "generate_origin_script"
+  | "generate_contrarian_hooks"
+  | "generate_caption_starters"
+  | "generate_mood_format_map"
+  | "multiply_post"
+  | "make_more_viral"
+  | "make_more_niche";
 
 export async function POST(request: Request) {
   const rawBody = await request.json().catch(() => ({}));
@@ -248,6 +286,356 @@ export async function POST(request: Request) {
         });
       }
 
+      case "generate_pillars": {
+        const res = await runGeneratePillars({
+          wiki,
+          artistName: artist.artist_name,
+        });
+        await admin.from("agent_logs").insert({
+          artist_id: artist.id,
+          agent_type: "brand_director",
+          action: "generate_pillars",
+          summary: `Generated ${res.pillars.length} content pillars`,
+          details: {
+            count: res.pillars.length,
+            confidence: res.confidence,
+          },
+          tokens_used: res.tokensUsed,
+          duration_ms: res.durationMs,
+        });
+        await incrementAgentRunCounter(artist.id);
+        return NextResponse.json({
+          mode,
+          pillars: res.pillars,
+          reasoning: res.reasoning,
+          confidence: res.confidence,
+        });
+      }
+
+      case "generate_hooks": {
+        const lockedPillars = Array.isArray(body?.pillars)
+          ? (body.pillars as Array<Record<string, unknown>>).map((p) => ({
+              id: String(p.id ?? ""),
+              name: String(p.name ?? ""),
+            }))
+          : undefined;
+        const res = await runGenerateHooks({
+          wiki,
+          pillars: lockedPillars,
+          artistName: artist.artist_name,
+        });
+        await admin.from("agent_logs").insert({
+          artist_id: artist.id,
+          agent_type: "brand_director",
+          action: "generate_hooks",
+          summary: `Generated ${res.hooks.length} hook templates`,
+          details: {
+            count: res.hooks.length,
+            confidence: res.confidence,
+          },
+          tokens_used: res.tokensUsed,
+          duration_ms: res.durationMs,
+        });
+        await incrementAgentRunCounter(artist.id);
+        return NextResponse.json({
+          mode,
+          hooks: res.hooks,
+          reasoning: res.reasoning,
+          confidence: res.confidence,
+        });
+      }
+
+      case "generate_origin_script": {
+        const res = await runGenerateOriginScript({
+          wiki,
+          artistName: artist.artist_name,
+        });
+        await persistModuleOutput(admin, artist.id, wiki, "identity", "origin_script", {
+          hook: res.hook,
+          moment: res.moment,
+          reveal: res.reveal,
+          cta: res.cta,
+          shot_notes: res.shot_notes,
+          reasoning: res.reasoning,
+          confidence: res.confidence,
+          generated_at: new Date().toISOString(),
+        });
+        await admin.from("agent_logs").insert({
+          artist_id: artist.id,
+          agent_type: "brand_director",
+          action: "generate_origin_script",
+          summary: `Origin-moment script (conf ${res.confidence?.toFixed(2) ?? "—"})`,
+          details: { confidence: res.confidence },
+          tokens_used: res.tokensUsed,
+          duration_ms: res.durationMs,
+        });
+        await incrementAgentRunCounter(artist.id);
+        return NextResponse.json({
+          mode,
+          script: {
+            hook: res.hook,
+            moment: res.moment,
+            reveal: res.reveal,
+            cta: res.cta,
+            shot_notes: res.shot_notes,
+            reasoning: res.reasoning,
+            confidence: res.confidence,
+          },
+        });
+      }
+
+      case "generate_contrarian_hooks": {
+        const res = await runGenerateContrarianHooks({
+          wiki,
+          artistName: artist.artist_name,
+        });
+        await persistModuleOutput(admin, artist.id, wiki, "identity", "contrarian_hooks", {
+          hooks: res.hooks,
+          reasoning: res.reasoning,
+          confidence: res.confidence,
+          generated_at: new Date().toISOString(),
+        });
+        await admin.from("agent_logs").insert({
+          artist_id: artist.id,
+          agent_type: "brand_director",
+          action: "generate_contrarian_hooks",
+          summary: `${res.hooks.length} contrarian hooks`,
+          details: { count: res.hooks.length, confidence: res.confidence },
+          tokens_used: res.tokensUsed,
+          duration_ms: res.durationMs,
+        });
+        await incrementAgentRunCounter(artist.id);
+        return NextResponse.json({
+          mode,
+          hooks: res.hooks,
+          reasoning: res.reasoning,
+          confidence: res.confidence,
+        });
+      }
+
+      case "generate_caption_starters": {
+        const res = await runGenerateCaptionStarters({
+          wiki,
+          artistName: artist.artist_name,
+        });
+        await persistModuleOutput(admin, artist.id, wiki, "emotional", "caption_starters", {
+          by_emotion: res.by_emotion,
+          reasoning: res.reasoning,
+          confidence: res.confidence,
+          generated_at: new Date().toISOString(),
+        });
+        await admin.from("agent_logs").insert({
+          artist_id: artist.id,
+          agent_type: "brand_director",
+          action: "generate_caption_starters",
+          summary: `Caption starters across ${Object.keys(res.by_emotion).length} emotion${Object.keys(res.by_emotion).length === 1 ? "" : "s"}`,
+          details: {
+            emotion_count: Object.keys(res.by_emotion).length,
+            confidence: res.confidence,
+          },
+          tokens_used: res.tokensUsed,
+          duration_ms: res.durationMs,
+        });
+        await incrementAgentRunCounter(artist.id);
+        return NextResponse.json({
+          mode,
+          by_emotion: res.by_emotion,
+          reasoning: res.reasoning,
+          confidence: res.confidence,
+        });
+      }
+
+      case "generate_mood_format_map": {
+        const res = await runGenerateMoodFormatMap({
+          wiki,
+          artistName: artist.artist_name,
+        });
+        await persistModuleOutput(admin, artist.id, wiki, "emotional", "mood_format_map", {
+          by_mood: res.by_mood,
+          reasoning: res.reasoning,
+          confidence: res.confidence,
+          generated_at: new Date().toISOString(),
+        });
+        await admin.from("agent_logs").insert({
+          artist_id: artist.id,
+          agent_type: "brand_director",
+          action: "generate_mood_format_map",
+          summary: `Mood→format map across ${res.by_mood.length} mood${res.by_mood.length === 1 ? "" : "s"}`,
+          details: { mood_count: res.by_mood.length, confidence: res.confidence },
+          tokens_used: res.tokensUsed,
+          duration_ms: res.durationMs,
+        });
+        await incrementAgentRunCounter(artist.id);
+        return NextResponse.json({
+          mode,
+          by_mood: res.by_mood,
+          reasoning: res.reasoning,
+          confidence: res.confidence,
+        });
+      }
+
+      case "multiply_post": {
+        const piece = body?.piece as
+          | {
+              platform?: unknown;
+              hook?: unknown;
+              body?: unknown;
+              cta?: unknown;
+            }
+          | undefined;
+        if (!piece) {
+          return NextResponse.json(
+            { error: "multiply_post requires { piece }" },
+            { status: 400 },
+          );
+        }
+        const res = await runMultiplyPost({
+          wiki,
+          artistName: artist.artist_name,
+          piece: {
+            platform: String(piece.platform ?? ""),
+            hook: String(piece.hook ?? ""),
+            body: String(piece.body ?? ""),
+            cta: String(piece.cta ?? ""),
+          },
+        });
+        await admin.from("agent_logs").insert({
+          artist_id: artist.id,
+          agent_type: "brand_director",
+          action: "multiply_post",
+          summary: `${res.variants.length} platform variants`,
+          details: { count: res.variants.length, confidence: res.confidence },
+          tokens_used: res.tokensUsed,
+          duration_ms: res.durationMs,
+        });
+        await incrementAgentRunCounter(artist.id);
+        return NextResponse.json({
+          mode,
+          variants: res.variants,
+          reasoning: res.reasoning,
+          confidence: res.confidence,
+        });
+      }
+
+      case "make_more_viral":
+      case "make_more_niche": {
+        const piece = body?.piece as
+          | {
+              platform?: unknown;
+              hook?: unknown;
+              body?: unknown;
+              cta?: unknown;
+            }
+          | undefined;
+        if (!piece) {
+          return NextResponse.json(
+            { error: `${mode} requires { piece }` },
+            { status: 400 },
+          );
+        }
+        const runner = mode === "make_more_viral" ? runMakeMoreViral : runMakeMoreNiche;
+        const res = await runner({
+          wiki,
+          artistName: artist.artist_name,
+          piece: {
+            platform: String(piece.platform ?? ""),
+            hook: String(piece.hook ?? ""),
+            body: String(piece.body ?? ""),
+            cta: String(piece.cta ?? ""),
+          },
+        });
+        await admin.from("agent_logs").insert({
+          artist_id: artist.id,
+          agent_type: "brand_director",
+          action: mode,
+          summary: `Refined for ${mode === "make_more_viral" ? "viral lift" : "niche fit"} (delta ${res.delta_score?.toFixed(2) ?? "—"})`,
+          details: {
+            delta_score: res.delta_score,
+            confidence: res.confidence,
+          },
+          tokens_used: res.tokensUsed,
+          duration_ms: res.durationMs,
+        });
+        await incrementAgentRunCounter(artist.id);
+        return NextResponse.json({
+          mode,
+          refined: {
+            hook: res.hook,
+            body: res.body,
+            cta: res.cta,
+            delta_message: res.delta_message,
+            delta_score: res.delta_score,
+            reasoning: res.reasoning,
+            confidence: res.confidence,
+          },
+        });
+      }
+
+      case "score_content": {
+        const piece = body?.piece as
+          | {
+              platform?: unknown;
+              hook?: unknown;
+              body?: unknown;
+              cta?: unknown;
+              pillar_id?: unknown;
+              format_id?: unknown;
+            }
+          | undefined;
+        if (!piece) {
+          return NextResponse.json(
+            { error: "score_content requires { piece }" },
+            { status: 400 },
+          );
+        }
+        const res = await runScoreContent({
+          wiki,
+          artistName: artist.artist_name,
+          piece: {
+            platform: String(piece.platform ?? ""),
+            hook: String(piece.hook ?? ""),
+            body: String(piece.body ?? ""),
+            cta: String(piece.cta ?? ""),
+            pillar_id: piece.pillar_id ? String(piece.pillar_id) : null,
+            format_id: piece.format_id ? String(piece.format_id) : null,
+          },
+        });
+        await admin.from("agent_logs").insert({
+          artist_id: artist.id,
+          agent_type: "brand_director",
+          action: "score_content",
+          summary: `Scored content piece: total ${res.total.toFixed(2)}`,
+          details: {
+            scores: {
+              identity_match: res.identity_match,
+              emotional_accuracy: res.emotional_accuracy,
+              audience_relevance: res.audience_relevance,
+              platform_fit: res.platform_fit,
+              total: res.total,
+            },
+            flags: res.flags,
+            confidence: res.confidence,
+          },
+          tokens_used: res.tokensUsed,
+          duration_ms: res.durationMs,
+        });
+        await incrementAgentRunCounter(artist.id);
+        return NextResponse.json({
+          mode,
+          score: {
+            identity_match: res.identity_match,
+            emotional_accuracy: res.emotional_accuracy,
+            audience_relevance: res.audience_relevance,
+            platform_fit: res.platform_fit,
+            total: res.total,
+            flags: res.flags,
+            suggestions: res.suggestions,
+            reasoning: res.reasoning,
+            confidence: res.confidence,
+          },
+        });
+      }
+
       case "guide":
       default: {
         const focus = body?.focus as BrandFocus | undefined;
@@ -308,5 +696,39 @@ export async function POST(request: Request) {
     const message =
       err instanceof Error ? err.message : "Brand Director failed";
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+// Read-merge-write a single output bucket on `brand_wiki.module_outputs`.
+// Shape: { <module_id>: { <output_key>: { ...payload } } }
+// Fails soft when the column is missing (migration 00030 unapplied) so the
+// generation still returns its result to the UI even if persistence skips.
+async function persistModuleOutput(
+  admin: ReturnType<typeof createAdminClient>,
+  artistId: string,
+  wiki: Record<string, unknown> | null,
+  moduleId: string,
+  outputKey: string,
+  payload: unknown,
+): Promise<void> {
+  const existing =
+    (wiki && typeof wiki === "object" ? (wiki as Record<string, unknown>).module_outputs : null) ??
+    null;
+  const next: Record<string, Record<string, unknown>> =
+    existing && typeof existing === "object"
+      ? (JSON.parse(JSON.stringify(existing)) as Record<string, Record<string, unknown>>)
+      : {};
+  if (!next[moduleId] || typeof next[moduleId] !== "object") next[moduleId] = {};
+  next[moduleId][outputKey] = payload as Record<string, unknown>;
+  const { error } = await admin
+    .from("brand_wiki")
+    .update({ module_outputs: next })
+    .eq("artist_id", artistId);
+  if (error) {
+    if (/relation .* does not exist|column .* does not exist|schema cache/i.test(error.message)) {
+      return; // migration not applied — skip persistence silently
+    }
+    // Real error — log so we notice but don't break the API response
+    console.error("persistModuleOutput failed:", error.message);
   }
 }

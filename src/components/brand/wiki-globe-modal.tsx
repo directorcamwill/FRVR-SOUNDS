@@ -41,6 +41,7 @@ const MODULE_ACCENT: Record<BrandModuleId, string> = {
   visual: LASER_RED,
   sonic: LASER_RED,
   routes: LASER_RED,
+  engine: LASER_RED,
 };
 
 // Tech-blue used for the "currently open" dossier accent so the UI echoes

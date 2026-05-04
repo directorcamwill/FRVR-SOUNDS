@@ -23,6 +23,7 @@ import type { Song } from "@/types/song";
 import { MotionCard, AnimatedNumber, GlowDot, GlowCard } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
 import { SubmitToLibraryCard } from "@/components/library/submit-to-library-card";
+import { OnboardingCallout } from "@/components/onboarding/onboarding-callout";
 
 const V2_COMMAND_CENTER =
   process.env.NEXT_PUBLIC_V2_COMMAND_CENTER === "true";
@@ -338,6 +339,8 @@ export default function CommandCenterPage() {
 
   return (
     <div className="space-y-6">
+      <OnboardingCallout />
+
       {/* Top banner: FocusBar (v2) or Welcome Back (v1) */}
       {V2_COMMAND_CENTER ? (
         <>

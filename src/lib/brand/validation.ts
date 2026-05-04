@@ -155,18 +155,21 @@ export function computeModuleCompleteness(
   moduleQuestions: BrandQuestion[],
   wiki: Record<string, unknown>
 ): number {
-  if (moduleQuestions.length === 0) return 0;
+  // V2: optional questions don't count toward the 80% threshold so adding
+  // new questions to existing modules can't regress an artist's progress.
+  const required = moduleQuestions.filter((q) => !q.optional);
+  if (required.length === 0) return 0;
   let filled = 0;
-  for (const q of moduleQuestions) {
+  for (const q of required) {
     const v = wiki[q.field_key];
     if (isFilled(v)) filled++;
     // composite: two_box fills transformation_before + transformation_after
     if (q.input === "two_box" && q.field_key === "transformation_before") {
       const after = wiki["transformation_after"];
-      if (isFilled(v) && isFilled(after)) filled = Math.min(moduleQuestions.length, filled); // already counted
+      if (isFilled(v) && isFilled(after)) filled = Math.min(required.length, filled); // already counted
     }
   }
-  return Math.round((filled / moduleQuestions.length) * 100);
+  return Math.round((filled / required.length) * 100);
 }
 
 function isFilled(v: unknown): boolean {

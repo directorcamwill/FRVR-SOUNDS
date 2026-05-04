@@ -75,6 +75,12 @@ export interface BrandQuestion {
   // reference examples shown in a collapsible
   strongExample?: string;
   weakExample?: string;
+
+  // V2: when true, the question does NOT count toward the 80% module
+  // completeness threshold. New V2 questions added to existing modules are
+  // marked optional so already-activated artists don't see their progress
+  // regress. Module 8 (Content Engine) questions remain required.
+  optional?: boolean;
 }
 
 export interface BrandModule {
@@ -205,6 +211,19 @@ export const BRAND_MODULES: BrandModule[] = [
         minChips: 3,
         maxChips: 5,
         placeholder: "Distance / Memory / Return",
+      },
+      {
+        id: "identity.public_truth",
+        module_id: "identity",
+        field_key: "public_truth",
+        prompt:
+          "What's a belief you hold that costs you fans? (We'll turn it into a content pillar.)",
+        help: "The contrarian take. Where your taste diverges from your lane.",
+        input: "textarea",
+        minLength: 30,
+        placeholder:
+          "Pop hooks are a tax on the song. Most artists pay it because they're scared.",
+        optional: true,
       },
     ],
   },
@@ -356,6 +375,80 @@ export const BRAND_MODULES: BrandModule[] = [
             placeholder: "no pop hooks, orchestral bed, leave more space",
           },
         ],
+      },
+      // ─── Niche Domination Layer (V2, optional) ───
+      {
+        id: "niche.micro_statement",
+        module_id: "positioning",
+        field_key: "niche_micro_statement",
+        prompt:
+          "State your micro-niche in ≤8 words. Genre + audience + outcome only.",
+        help: "Sharper than your category lane. The 8-word version.",
+        input: "text",
+        maxLength: 80,
+        placeholder: "Cinematic R&B for prestige TV scoring.",
+        optional: true,
+      },
+      {
+        id: "niche.competitors",
+        module_id: "positioning",
+        field_key: "niche_competitors",
+        prompt:
+          "3–5 specific artists in your micro-niche. Their dominant move and where they're weakest.",
+        help: "Real names with links. Specifics beat archetypes.",
+        input: "repeater",
+        repeaterMin: 3,
+        repeaterMax: 5,
+        repeaterSchema: [
+          { field: "name", label: "Artist / brand", placeholder: "Sault" },
+          { field: "url", label: "URL", placeholder: "https://..." },
+          {
+            field: "dominant_move",
+            label: "Their dominant move",
+            placeholder: "Anonymous releases, no faces, pure mythology.",
+          },
+          {
+            field: "weak_spot",
+            label: "Where they're weakest",
+            placeholder: "No live show — concert demand is unmet.",
+          },
+        ],
+        optional: true,
+      },
+      {
+        id: "niche.gap",
+        module_id: "positioning",
+        field_key: "niche_gap",
+        prompt: "What is no one in your lane doing — that you would?",
+        help: "The whitespace. Must contain a verb.",
+        input: "textarea",
+        minLength: 60,
+        placeholder:
+          "Nobody scores prestige drama with hip-hop drum programming. I would — and supervisors keep almost-asking for it.",
+        optional: true,
+      },
+      {
+        id: "niche.ownable_territory",
+        module_id: "positioning",
+        field_key: "niche_ownable_territory",
+        prompt: "I am the only artist who [X] for [Y] in [Z].",
+        help: "X = move. Y = audience. Z = context/format.",
+        input: "templated",
+        templatedSlots: [
+          {
+            label: "X (the move)",
+            placeholder: "scores with hip-hop drum programming",
+          },
+          {
+            label: "Y (the audience)",
+            placeholder: "prestige TV music supervisors",
+          },
+          {
+            label: "Z (the context)",
+            placeholder: "the cold-open scene of a drama",
+          },
+        ],
+        optional: true,
       },
     ],
   },
@@ -721,6 +814,223 @@ export const BRAND_MODULES: BrandModule[] = [
         minChips: 2,
         maxChips: 8,
         placeholder: "Heavy Hitters, Audiio, Musicbed, APM",
+      },
+      // ─── Routes → Revenue (V2, optional) ───
+      {
+        id: "revenue.primary_path",
+        module_id: "routes",
+        field_key: "revenue_primary_path",
+        prompt: "Your primary revenue path. Where does the first dollar come from?",
+        help: "One. Not all of them.",
+        input: "chips",
+        minChips: 1,
+        maxChips: 1,
+        chipOptions: [
+          "sync",
+          "streaming",
+          "direct_fan",
+          "publishing",
+          "live",
+          "production_for_hire",
+        ],
+        optional: true,
+      },
+      {
+        id: "revenue.secondary_paths",
+        module_id: "routes",
+        field_key: "revenue_secondary_paths",
+        prompt: "Up to 2 secondary revenue paths.",
+        help: "The lanes you'll keep open while you build the primary one.",
+        input: "chips",
+        minChips: 0,
+        maxChips: 2,
+        chipOptions: [
+          "sync",
+          "streaming",
+          "direct_fan",
+          "publishing",
+          "live",
+          "production_for_hire",
+        ],
+        optional: true,
+      },
+      {
+        id: "revenue.offer_100",
+        module_id: "routes",
+        field_key: "revenue_offer_100",
+        prompt: "What can you sell to your first 100 real fans? (≤$50)",
+        help: "Concrete: a thing, a price, a delivery channel.",
+        input: "textarea",
+        minLength: 30,
+        placeholder:
+          "$15 limited demo cassette — 100 numbered, shipped from my place, signed.",
+        optional: true,
+      },
+      {
+        id: "revenue.offer_1k",
+        module_id: "routes",
+        field_key: "revenue_offer_1k",
+        prompt: "Your $50–$500 product when you have 1,000 fans?",
+        input: "textarea",
+        minLength: 30,
+        placeholder:
+          "$120 vinyl + private listening party livestream + Patreon-only stems pack.",
+        optional: true,
+      },
+      {
+        id: "revenue.offer_10k",
+        module_id: "routes",
+        field_key: "revenue_offer_10k",
+        prompt: "Your $500+ tier at 10,000 fans?",
+        input: "textarea",
+        minLength: 30,
+        placeholder:
+          "$650 in-person scoring intensive — 8 supervisors, 2 days, my home studio.",
+        optional: true,
+      },
+    ],
+  },
+
+  // ─── MODULE 8 — CONTENT ENGINE (V2) ─────────────────────────────────────
+  // The execution layer. Where identity becomes weekly output.
+  {
+    id: "engine",
+    label: "Content Engine",
+    tagline: "Where identity becomes weekly output.",
+    order: 8,
+    questions: [
+      {
+        id: "engine.pillars",
+        module_id: "engine",
+        field_key: "content_pillars",
+        prompt:
+          "Lock 3 content pillars. Each is a recurring angle — derived from your themes, beliefs, and contrarian truth.",
+        help: "Name + angle + sample format. The 3 things you'll keep coming back to.",
+        input: "repeater",
+        repeaterMin: 3,
+        repeaterMax: 3,
+        repeaterSchema: [
+          { field: "id", label: "Slug (lowercase, no spaces)", placeholder: "bts-process" },
+          { field: "name", label: "Pillar name", placeholder: "BTS process" },
+          {
+            field: "angle",
+            label: "Angle",
+            placeholder: "How a record gets built — every choice exposed.",
+          },
+          {
+            field: "sample_format",
+            label: "Sample format",
+            placeholder: "60-sec voiceover over the multitrack scrolling.",
+          },
+        ],
+      },
+      {
+        id: "engine.formats",
+        module_id: "engine",
+        field_key: "content_formats",
+        prompt: "5 repeatable content formats. Each one you can produce in <60 min.",
+        help: "Format name + structure + time-to-produce + which pillar it serves.",
+        input: "repeater",
+        repeaterMin: 5,
+        repeaterMax: 5,
+        repeaterSchema: [
+          { field: "id", label: "Slug", placeholder: "ref-deconstruct" },
+          { field: "name", label: "Format name", placeholder: "Reference deconstruction" },
+          {
+            field: "structure",
+            label: "Structure",
+            placeholder: "Hook (5s) → claim → 3 specific moves → CTA",
+          },
+          {
+            field: "time_to_produce_min",
+            label: "Time to produce (min)",
+            placeholder: "45",
+          },
+          { field: "pillar_id", label: "Pillar slug", placeholder: "bts-process" },
+        ],
+      },
+      {
+        id: "engine.platforms",
+        module_id: "engine",
+        field_key: "platform_strategy",
+        prompt: "Pick your primary platform + up to 2 secondary.",
+        help: "Where you compete first. Where you syndicate. The matrix comes later.",
+        input: "templated",
+        templatedSlots: [
+          { label: "Primary platform", placeholder: "instagram" },
+          { label: "Secondary 1", placeholder: "tiktok" },
+          { label: "Secondary 2", placeholder: "newsletter" },
+        ],
+      },
+      {
+        id: "engine.cadence",
+        module_id: "engine",
+        field_key: "weekly_cadence",
+        prompt: "Weekly cadence. Slots per week + your batch day + ship days.",
+        help: "Be honest about what you'll sustain — not what you wish you'd ship.",
+        input: "multi_field",
+        multiFields: [
+          {
+            label: "Slots per week (primary platform)",
+            field_key: "weekly_cadence_primary_count",
+            placeholder: "3",
+            input_type: "number",
+          },
+          {
+            label: "Batch day",
+            field_key: "weekly_cadence_batch_day",
+            placeholder: "sunday",
+          },
+          {
+            label: "Ship days (comma-separated)",
+            field_key: "weekly_cadence_ship_days",
+            placeholder: "tuesday, thursday, saturday",
+          },
+        ],
+      },
+      {
+        id: "engine.hooks",
+        module_id: "engine",
+        field_key: "hook_library",
+        prompt:
+          "10 reusable hook templates. Each tagged with a pillar and an emotion.",
+        help: "Hooks are your weekly fuel. Steal from your own best-performing posts and your reference artists.",
+        input: "repeater",
+        repeaterMin: 10,
+        repeaterMax: 10,
+        repeaterSchema: [
+          { field: "id", label: "Slug", placeholder: "h-01" },
+          {
+            field: "text",
+            label: "Hook template",
+            placeholder: "Most artists in [niche] do X. Here's why I won't.",
+          },
+          { field: "pillar_id", label: "Pillar slug", placeholder: "bts-process" },
+          { field: "emotion", label: "Dominant emotion", placeholder: "tense" },
+        ],
+      },
+      {
+        id: "engine.conversion",
+        module_id: "engine",
+        field_key: "conversion_path",
+        prompt:
+          "Conversion path: one CTA per fan stage. How a stranger becomes a buyer.",
+        help: "Stranger → Listener → Follower → Subscriber → Buyer. Each stage gets one ask.",
+        input: "repeater",
+        repeaterMin: 5,
+        repeaterMax: 5,
+        repeaterSchema: [
+          {
+            field: "stage",
+            label: "Stage",
+            placeholder: "stranger | listener | follower | subscriber | buyer",
+          },
+          {
+            field: "cta",
+            label: "CTA for this stage",
+            placeholder: "Save the post.",
+          },
+        ],
       },
     ],
   },

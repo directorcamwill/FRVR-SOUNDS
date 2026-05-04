@@ -124,6 +124,35 @@ const WRITABLE_FIELDS: Array<keyof BrandWiki> = [
   "module_locked_at",
   "module_completeness",
   "journey_notes",
+  // V2 — Identity
+  "public_truth",
+  // V2 — Niche Domination Layer
+  "niche_micro_statement",
+  "niche_competitors",
+  "niche_gap",
+  "niche_ownable_territory",
+  // V2 — Routes → Revenue
+  "revenue_primary_path",
+  "revenue_secondary_paths",
+  "revenue_offer_100",
+  "revenue_offer_1k",
+  "revenue_offer_10k",
+  // V2 — Module 8: Content Engine
+  "content_pillars",
+  "content_formats",
+  "platform_strategy",
+  "weekly_cadence",
+  "weekly_cadence_primary_count",
+  "weekly_cadence_batch_day",
+  "weekly_cadence_ship_days",
+  "hook_library",
+  "conversion_path",
+  // V2 — Cross-module artifacts
+  "offer_ladder",
+  "content_revenue_map",
+  "consistency_plan",
+  "module_outputs",
+  "audience_models",
 ];
 
 export async function PUT(request: Request) {
