@@ -1,10 +1,6 @@
 "use client";
 
-// Skip prerender — useSearchParams() bails out of static generation;
-// this is an auth-gated dashboard page anyway.
-export const dynamic = "force-dynamic";
-
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -87,6 +83,21 @@ const PLATFORM_OPTIONS: Array<{ value: string; label: string }> = [
 ];
 
 export default function DraftEditorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-4 max-w-4xl mx-auto">
+          <Skeleton className="h-12 w-64" />
+          <Skeleton className="h-96" />
+        </div>
+      }
+    >
+      <DraftEditorContent />
+    </Suspense>
+  );
+}
+
+function DraftEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editingId = searchParams.get("id");
